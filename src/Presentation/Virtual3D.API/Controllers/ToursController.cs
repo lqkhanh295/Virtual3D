@@ -1,26 +1,24 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using Virtual3D.Data;
-using Virtual3D.Models;
+using Virtual3D.Application.Interfaces;
+using Virtual3D.Domain.Entities;
 
-namespace Virtual3D.Controllers
+namespace Virtual3D.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class ToursController : ControllerBase
     {
-        private readonly TourDbContext _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly ITourRepository _repository;
+        private readonly IFileStorageService _fileStorage;
 
-        public ToursController(TourDbContext context, IWebHostEnvironment env)
+        public ToursController(ITourRepository repository, IFileStorageService fileStorage)
         {
-            _context = context;
-            _env = env;
+            _repository = repository;
+            _fileStorage = fileStorage;
         }
 
         // ==========================================
@@ -30,20 +28,14 @@ namespace Virtual3D.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTours()
         {
-            var tours = await _context.Tours
-                .Include(t => t.Rooms)
-                .ToListAsync();
+            var tours = await _repository.GetToursAsync();
             return Ok(tours);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTour(string id)
         {
-            var tour = await _context.Tours
-                .Include(t => t.Rooms)
-                    .ThenInclude(r => r.Hotspots)
-                .FirstOrDefaultAsync(t => t.Id == id);
-
+            var tour = await _repository.GetTourByIdAsync(id);
             if (tour == null) return NotFound();
             return Ok(tour);
         }
@@ -56,10 +48,8 @@ namespace Virtual3D.Controllers
                 tour.Id = Guid.NewGuid().ToString();
             }
 
-            _context.Tours.Add(tour);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetTour), new { id = tour.Id }, tour);
+            var createdTour = await _repository.CreateTourAsync(tour);
+            return CreatedAtAction(nameof(GetTour), new { id = createdTour.Id }, createdTour);
         }
 
         [HttpPut("{id}")]
@@ -67,7 +57,7 @@ namespace Virtual3D.Controllers
         {
             if (id != tourUpdate.Id) return BadRequest("Tour ID mismatch");
 
-            var tour = await _context.Tours.FindAsync(id);
+            var tour = await _repository.GetTourByIdAsync(id);
             if (tour == null) return NotFound();
 
             tour.Name = tourUpdate.Name;
@@ -77,18 +67,17 @@ namespace Virtual3D.Controllers
                 tour.MinimapUrl = tourUpdate.MinimapUrl;
             }
 
-            await _context.SaveChangesAsync();
+            await _repository.UpdateTourAsync(tour);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTour(string id)
         {
-            var tour = await _context.Tours.FindAsync(id);
+            var tour = await _repository.GetTourByIdAsync(id);
             if (tour == null) return NotFound();
 
-            _context.Tours.Remove(tour);
-            await _context.SaveChangesAsync();
+            await _repository.DeleteTourAsync(id);
             return NoContent();
         }
 
@@ -99,19 +88,16 @@ namespace Virtual3D.Controllers
         [HttpPost("{tourId}/rooms")]
         public async Task<IActionResult> CreateRoom(string tourId, Room room)
         {
-            var tourExists = await _context.Tours.AnyAsync(t => t.Id == tourId);
+            var tourExists = await _repository.TourExistsAsync(tourId);
             if (!tourExists) return NotFound("Tour not found");
 
-            room.TourId = tourId;
             if (string.IsNullOrEmpty(room.Id))
             {
                 room.Id = Guid.NewGuid().ToString();
             }
 
-            _context.Rooms.Add(room);
-            await _context.SaveChangesAsync();
-
-            return Ok(room);
+            var createdRoom = await _repository.CreateRoomAsync(tourId, room);
+            return Ok(createdRoom);
         }
 
         [HttpPut("rooms/{id}")]
@@ -119,7 +105,7 @@ namespace Virtual3D.Controllers
         {
             if (id != roomUpdate.Id) return BadRequest("Room ID mismatch");
 
-            var room = await _context.Rooms.FindAsync(id);
+            var room = await _repository.GetRoomByIdAsync(id);
             if (room == null) return NotFound();
 
             room.Name = roomUpdate.Name;
@@ -131,18 +117,17 @@ namespace Virtual3D.Controllers
             room.PosY = roomUpdate.PosY;
             room.PosZ = roomUpdate.PosZ;
 
-            await _context.SaveChangesAsync();
+            await _repository.UpdateRoomAsync(room);
             return NoContent();
         }
 
         [HttpDelete("rooms/{id}")]
         public async Task<IActionResult> DeleteRoom(string id)
         {
-            var room = await _context.Rooms.FindAsync(id);
+            var room = await _repository.GetRoomByIdAsync(id);
             if (room == null) return NotFound();
 
-            _context.Rooms.Remove(room);
-            await _context.SaveChangesAsync();
+            await _repository.DeleteRoomAsync(id);
             return NoContent();
         }
 
@@ -153,19 +138,16 @@ namespace Virtual3D.Controllers
         [HttpPost("rooms/{roomId}/hotspots")]
         public async Task<IActionResult> CreateHotspot(string roomId, Hotspot hotspot)
         {
-            var roomExists = await _context.Rooms.AnyAsync(r => r.Id == roomId);
+            var roomExists = await _repository.RoomExistsAsync(roomId);
             if (!roomExists) return NotFound("Room not found");
 
-            hotspot.RoomId = roomId;
             if (string.IsNullOrEmpty(hotspot.Id))
             {
                 hotspot.Id = Guid.NewGuid().ToString();
             }
 
-            _context.Hotspots.Add(hotspot);
-            await _context.SaveChangesAsync();
-
-            return Ok(hotspot);
+            var createdHotspot = await _repository.CreateHotspotAsync(roomId, hotspot);
+            return Ok(createdHotspot);
         }
 
         [HttpPut("hotspots/{id}")]
@@ -173,7 +155,7 @@ namespace Virtual3D.Controllers
         {
             if (id != hotspotUpdate.Id) return BadRequest("Hotspot ID mismatch");
 
-            var hotspot = await _context.Hotspots.FindAsync(id);
+            var hotspot = await _repository.GetHotspotByIdAsync(id);
             if (hotspot == null) return NotFound();
 
             hotspot.Type = hotspotUpdate.Type;
@@ -184,18 +166,17 @@ namespace Virtual3D.Controllers
             hotspot.PosY = hotspotUpdate.PosY;
             hotspot.PosZ = hotspotUpdate.PosZ;
 
-            await _context.SaveChangesAsync();
+            await _repository.UpdateHotspotAsync(hotspot);
             return NoContent();
         }
 
         [HttpDelete("hotspots/{id}")]
         public async Task<IActionResult> DeleteHotspot(string id)
         {
-            var hotspot = await _context.Hotspots.FindAsync(id);
+            var hotspot = await _repository.GetHotspotByIdAsync(id);
             if (hotspot == null) return NotFound();
 
-            _context.Hotspots.Remove(hotspot);
-            await _context.SaveChangesAsync();
+            await _repository.DeleteHotspotAsync(id);
             return NoContent();
         }
 
@@ -211,23 +192,18 @@ namespace Virtual3D.Controllers
                 return BadRequest("No file uploaded");
             }
 
-            // Create uploads directory in wwwroot
-            string uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads");
-            if (!Directory.Exists(uploadsFolder))
+            try
             {
-                Directory.CreateDirectory(uploadsFolder);
+                using (var stream = file.OpenReadStream())
+                {
+                    string relativePath = await _fileStorage.SaveFileAsync(stream, file.FileName);
+                    return Ok(new { url = relativePath });
+                }
             }
-
-            string uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            catch (Exception ex)
             {
-                await file.CopyToAsync(fileStream);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
-
-            string relativePath = $"/uploads/{uniqueFileName}";
-            return Ok(new { url = relativePath });
         }
     }
 }

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Virtual3D.Models;
+using Virtual3D.Domain.Entities;
 
-namespace Virtual3D.Data
+namespace Virtual3D.Infrastructure.Data
 {
     public class TourDbContext : DbContext
     {

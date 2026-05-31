@@ -1,0 +1,6 @@
+@Virtual3D.API_HostAddress = http://localhost:5148
+
+GET {{Virtual3D.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

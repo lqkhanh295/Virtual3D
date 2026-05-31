@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Virtual3D.Application\Virtual3D.Application.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\Virtual3D.Infrastructure\Virtual3D.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Core/">
+    <Project Path="src/Core/Virtual3D.Application/Virtual3D.Application.csproj" />
+    <Project Path="src/Core/Virtual3D.Domain/Virtual3D.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/Virtual3D.Infrastructure/Virtual3D.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Presentation/">
+    <Project Path="src/Presentation/Virtual3D.API/Virtual3D.API.csproj" />
+  </Folder>
+</Solution>
