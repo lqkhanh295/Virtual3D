@@ -1,0 +1,444 @@
+/* ==========================================
+   VIRTUAL3D DESIGN SYSTEM & BASE STYLES
+   ========================================== */
+
+:root {
+    --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    
+    /* Elegant Space Dark Palette */
+    --bg-dark: #070913;
+    --bg-card: rgba(10, 12, 30, 0.5);
+    --bg-card-hover: rgba(20, 24, 50, 0.65);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-highlight: rgba(255, 255, 255, 0.16);
+    
+    /* Vibrant gradients */
+    --accent-primary: #8b5cf6; /* Indigo / Purple */
+    --accent-secondary: #06b6d4; /* Cyan */
+    --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+    
+    /* Text colors */
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    
+    /* Dimensions & Speeds */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Panel Component */
+.glass-panel {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: var(--transition-smooth);
+}
+
+.glass-panel:hover {
+    border-color: var(--border-highlight);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Utility classes */
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.gradient-text {
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+/* ==========================================
+   INTERACTIVE VIEWER & HOTSPOT STYLES
+   ========================================== */
+
+#viewer-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    outline: none;
+}
+
+/* Custom 2D Overlaid Hotspot markers */
+.hotspot-marker {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: auto;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hotspot-marker:hover {
+    transform: translate(-50%, -50%) scale(1.15);
+}
+
+.hotspot-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(7, 9, 19, 0.8);
+    border: 2px solid #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    position: relative;
+    transition: var(--transition-smooth);
+}
+
+/* Navigation hotspots have pulsing border */
+.hotspot-marker.nav .hotspot-icon-wrapper {
+    border-color: var(--accent-secondary);
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.6);
+    animation: pulse-cyan 2s infinite;
+}
+
+/* Info hotspots have different styling */
+.hotspot-marker.info .hotspot-icon-wrapper {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.6);
+    animation: pulse-purple 2s infinite;
+}
+
+.hotspot-label {
+    margin-top: 6px;
+    background: rgba(7, 9, 19, 0.85);
+    border: 1px solid var(--border-color);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    backdrop-filter: blur(4px);
+}
+
+/* Animations for pulsing ring glow */
+@keyframes pulse-cyan {
+    0% {
+        box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(6, 182, 212, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+    }
+}
+
+@keyframes pulse-purple {
+    0% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+    }
+}
+
+/* ==========================================
+   MINIMAP HUD COMPONENTS
+   ========================================== */
+
+.minimap-container {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 220px;
+    height: 180px;
+    z-index: 20;
+    padding: 12px;
+    overflow: hidden;
+}
+
+.minimap-canvas {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.minimap-room-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    border: 2px solid #fff;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 25;
+    transition: var(--transition-smooth);
+}
+
+.minimap-room-dot:hover {
+    transform: translate(-50%, -50%) scale(1.3);
+    box-shadow: 0 0 10px #fff;
+}
+
+.minimap-room-dot.active {
+    background: var(--accent-secondary);
+    border-color: #fff;
+    box-shadow: 0 0 12px var(--accent-secondary);
+}
+
+/* Yaw indicator radar cone */
+.radar-cone {
+    position: absolute;
+    pointer-events: none;
+    z-index: 22;
+    transform-origin: 50% 50%;
+    transition: transform 0.05s linear;
+}
+
+/* ==========================================
+   PREMIUM LOADER / SPINNER
+   ========================================== */
+
+.scene-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-dark);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease;
+}
+
+.loader-spinner {
+    width: 60px;
+    height: 60px;
+    border: 3px solid rgba(255, 255, 255, 0.05);
+    border-top: 3px solid var(--accent-primary);
+    border-right: 3px solid var(--accent-secondary);
+    border-radius: 50%;
+    animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   ADMIN MODE AND DIALOG COMPONENTS
+   ========================================== */
+
+.editor-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.crosshair-center {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent-secondary);
+    border: 1px solid #fff;
+    box-shadow: 0 0 8px var(--accent-secondary);
+}
+
+.crosshair-reticle {
+    width: 40px;
+    height: 40px;
+    border: 1px dashed rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    position: absolute;
+    animation: rotate-dashed 10s linear infinite;
+}
+
+@keyframes rotate-dashed {
+    to { transform: rotate(360deg); }
+}
+
+/* UI Panel layouts */
+.hud-panel {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    width: 320px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    z-index: 20;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    border: none;
+    color: #fff;
+}
+
+.button-primary {
+    background: var(--accent-gradient);
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+}
+
+.button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+}
+
+.button-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+}
+
+.button-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--border-highlight);
+}
+
+.button-danger {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+.button-danger:hover {
+    background: rgba(239, 68, 68, 0.35);
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Form Styles */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.form-group label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.form-group input, .form-group textarea, .form-group select {
+    background: rgba(7, 9, 19, 0.6);
+    border: 1px solid var(--border-color);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    transition: var(--transition-smooth);
+}
+
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--accent-secondary);
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+}
+
+/* Modal dialog container */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(3, 5, 12, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 500px;
+    padding: 24px;
+    animation: modal-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modal-enter {
+    from {
+        transform: scale(0.9) translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}

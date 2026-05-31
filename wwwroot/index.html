@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual3D - Premium 360° Apartment Tour</title>
+    
+    <!-- Meta tags for SEO -->
+    <meta name="description" content="Khám phá căn hộ mơ ước của bạn thông qua tour 360 độ trực quan, sinh động. Tương tác với sơ đồ mặt bằng và thiết kế nội thất trực tuyến.">
+    <meta name="keywords" content="virtual tour, 360 apartment, three.js, react, tour 360, can ho 360">
+    
+    <!-- Google Fonts: Outfit for clean luxury text, JetBrains Mono for metrics -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- CSS style sheet -->
+    <link rel="stylesheet" href="/src/index.css">
+    
+    <!-- React & ReactDOM (Local Scripts) -->
+    <script src="/lib/react.js"></script>
+    <script src="/lib/react-dom.js"></script>
+
+    <!-- Three.js (Local Script) -->
+    <script src="/lib/three.js"></script>
+    
+    <!-- OrbitControls for Three.js (Local Script) -->
+    <script src="/lib/orbit-controls.js"></script>
+
+    <!-- Lucide Icons for micro-icons (Local Script) -->
+    <script src="/lib/lucide.js"></script>
+    
+    <!-- Babel Standalone to compile JSX in browser (Local Script) -->
+    <script src="/lib/babel.js"></script>
+</head>
+<body>
+    <!-- Diagnostic On-screen Error Console -->
+    <div id="error-console" style="display:none; position:fixed; top:10px; left:10px; right:10px; background:rgba(220,38,38,0.95); color:white; padding:15px; border-radius:8px; z-index:99999; font-family:monospace; font-size:12px; white-space:pre-wrap; max-height:80vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+        <h3 style="margin-top:0; margin-bottom:10px; font-size:14px; font-weight:bold;">🔴 Lỗi JavaScript (Diagnostic Console):</h3>
+        <div id="error-message"></div>
+    </div>
+    <script>
+        window.addEventListener('error', function(event) {
+            var consoleDiv = document.getElementById('error-console');
+            var messageDiv = document.getElementById('error-message');
+            if (consoleDiv && messageDiv) {
+                consoleDiv.style.display = 'block';
+                messageDiv.textContent += (event.message || 'Unknown Error') + 
+                                          '\nat ' + (event.filename || 'unknown') + ':' + (event.lineno || '0') + ':' + (event.colno || '0') + '\n\n';
+            }
+        });
+        window.addEventListener('unhandledrejection', function(event) {
+            var consoleDiv = document.getElementById('error-console');
+            var messageDiv = document.getElementById('error-message');
+            if (consoleDiv && messageDiv) {
+                consoleDiv.style.display = 'block';
+                messageDiv.textContent += 'Unhandled Promise Rejection: ' + (event.reason ? (event.reason.message || event.reason) : 'Unknown Reason') + '\n\n';
+            }
+        });
+    </script>
+
+    <div id="root"></div>
+
+    <!-- Main React client loaded as Babel script -->
+    <script type="text/babel" src="/src/app.js"></script>
+</body>
+</html>
