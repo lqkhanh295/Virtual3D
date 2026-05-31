@@ -33,12 +33,12 @@
 
 ---
 
-## 🏗️ Thiết Kế Hệ Thống (System Architecture)
+## 🏗️ Thiết Kế Hệ Thống (System Architecture - Clean Architecture)
 
-- **Frontend:** React.js + Three.js + Vanilla CSS. (Tất cả được phân tách tối ưu và nạp qua Babel Standalone cục bộ giúp chạy tức thì không cần cài đặt Node.js hay npm).
-- **Backend:** ASP.NET Core Web API (C#).
-- **Database:** SQLite (Mặc định cấu hình sẵn, tự động chạy không cần cài đặt hệ quản trị dữ liệu) và PostgreSQL (Sẵn sàng cấu hình chuyển đổi).
-- **Storage:** Lưu trữ trực tiếp thư mục `wwwroot/uploads` cục bộ (có thể nâng cấp lên Cloudinary hoặc AWS S3).
+Dự án được cấu trúc theo mô hình **Clean Architecture (Onion Architecture)** giúp phân tách độc lập các luồng dữ liệu, nghiệp vụ doanh nghiệp, và giao diện hiển thị:
+- **Core (Domain & Application Layers):** Chứa các thực thể cốt lõi (`Tour`, `Room`, `Hotspot`) và định nghĩa các giao diện kho lưu trữ dữ liệu (`ITourRepository`, `IFileStorageService`) mà không phụ thuộc vào framework nào.
+- **Infrastructure:** Thực thi chi tiết cách lưu trữ dữ liệu thông qua EF Core (SQLite / PostgreSQL) và dịch vụ lưu trữ file vật lý trên ổ đĩa.
+- **Presentation (API / SPA):** Đóng vai trò là cổng giao tiếp HTTP API và phục vụ các tệp tĩnh React SPA cho trình duyệt người dùng.
 
 ---
 
@@ -46,27 +46,33 @@
 
 ```
 Virtual3D/
-├── Controllers/
-│   └── ToursController.cs    # Các API CRUD (Tour, Room, Hotspots, File Upload)
-├── Data/
-│   └── TourDbContext.cs      # EF Core DbContext cấu hình quan hệ bảng
-├── Models/
-│   └── TourModels.cs         # Định nghĩa các Model C# (Tour, Room, Hotspot)
-├── wwwroot/                  # Thư mục tĩnh được host bởi ASP.NET Core
-│   ├── index.html            # Trang entry-point chính (tích hợp Diagnostic Console)
-│   ├── lib/                  # Thư viện Frontend offline (React, Three, Babel, Lucide)
-│   └── src/
-│       ├── app.js            # Tồn tại toàn bộ logic React Components & Three.js Viewer
-│       └── index.css         # Hệ thống design tokens, glassmorphism UI, hiệu ứng pulse
-├── Program.cs                # Điểm khởi chạy API và tự động Seed cơ sở dữ liệu mẫu
-└── README.md                 # Tệp hướng dẫn này
+├── Virtual3D.slnx            # File C# XML Solution quản lý 4 projects
+└── src/
+    ├── Core/
+    │   ├── Virtual3D.Domain/         # Lớp Thực thể (Domain Entities)
+    │   │   └── Entities/             # Tour.cs, Room.cs, Hotspot.cs
+    │   │
+    │   └── Virtual3D.Application/    # Lớp Nghiệp vụ (Interfaces & DTOs)
+    │       └── Interfaces/           # Định nghĩa ITourRepository, IFileStorageService
+    │
+    ├── Infrastructure/
+    │   └── Virtual3D.Infrastructure/ # Lớp Hạ tầng (EF Core & Local Services)
+    │       ├── Data/                 # TourDbContext.cs và DbInitializer.cs (Seed data)
+    │       ├── Repositories/         # Triển khai TourRepository.cs
+    │       └── Services/             # Triển khai LocalFileStorageService.cs
+    │
+    └── Presentation/
+        └── Virtual3D.API/            # Lớp Giao diện & Cổng API (API & SPA Frontend)
+            ├── Controllers/          # ToursController.cs (HTTP Route endpoints)
+            ├── wwwroot/              # Chứa toàn bộ mã nguồn tĩnh của React SPA
+            └── Program.cs            # Cấu hình dependency injection và khởi tạo ứng dụng
 ```
 
 ---
 
 ## 🚀 Hướng Dẫn Chạy Dự Án (Local Setup)
 
-Dự án đã được đóng gói tự động hóa 100%, bạn chỉ cần có cài đặt .NET SDK trên máy tính:
+Dự án đã được đóng gói tự động hóa 100%, bạn chỉ cần cài đặt .NET SDK trên máy tính:
 
 1. **Clone mã nguồn dự án** hoặc mở terminal tại thư mục dự án:
    ```powershell
@@ -75,12 +81,12 @@ Dự án đã được đóng gói tự động hóa 100%, bạn chỉ cần có
 
 2. **Chạy ứng dụng bằng lệnh .NET:**
    ```powershell
-   dotnet run
+   dotnet run --project src/Presentation/Virtual3D.API
    ```
 
 3. **Mở trình duyệt Web và truy cập:**
-   Hệ thống sẽ chạy và lắng nghe tại cổng mặc định (ví dụ: `http://localhost:5048`). 
-   *Khi khởi chạy lần đầu, hệ thống sẽ tự động tạo file dữ liệu SQLite `virtual3d.db` và nạp sẵn 2 Tour mẫu: 1 Căn hộ Penthouse Luxury và 1 Phòng trọ gác lửng Studio.*
+   Hệ thống sẽ chạy và lắng nghe tại cổng mặc định: `http://localhost:5048`.
+   *Khi khởi chạy lần đầu, hệ thống sẽ tự động tạo cơ sở dữ liệu SQLite `virtual3d.db` tại thư mục đang thực thi và nạp sẵn 2 Tour mẫu: 1 Căn hộ Penthouse Luxury và 1 Phòng trọ gác lửng Studio.*
 
 ---
 
