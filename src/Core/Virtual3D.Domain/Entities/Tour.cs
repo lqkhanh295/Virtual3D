@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Virtual3D.Domain.Entities
 {
@@ -10,14 +11,14 @@ namespace Virtual3D.Domain.Entities
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
         [Required]
-        public string Name { get; set; } = string.Empty;
+        public string ListingId { get; set; } = string.Empty;
 
-        public string Description { get; set; } = string.Empty;
+        [ForeignKey("ListingId")]
+        public Listing? Listing { get; set; }
 
-        public string MinimapUrl { get; set; } = string.Empty;
+        public string? DefaultRoomId { get; set; }
 
-        // "apartment" or "boarding-room"
-        public string Type { get; set; } = "apartment";
+        public string? MinimapUrl { get; set; }
 
         public List<Room> Rooms { get; set; } = new();
     }

@@ -48,6 +48,15 @@ namespace Virtual3D.API.Controllers
                 tour.Id = Guid.NewGuid().ToString();
             }
 
+            if (tour.Listing != null)
+            {
+                if (string.IsNullOrEmpty(tour.Listing.Id))
+                {
+                    tour.Listing.Id = Guid.NewGuid().ToString();
+                }
+                tour.ListingId = tour.Listing.Id;
+            }
+
             var createdTour = await _repository.CreateTourAsync(tour);
             return CreatedAtAction(nameof(GetTour), new { id = createdTour.Id }, createdTour);
         }
@@ -60,11 +69,26 @@ namespace Virtual3D.API.Controllers
             var tour = await _repository.GetTourByIdAsync(id);
             if (tour == null) return NotFound();
 
-            tour.Name = tourUpdate.Name;
-            tour.Description = tourUpdate.Description;
-            if (!string.IsNullOrEmpty(tourUpdate.MinimapUrl))
+            tour.DefaultRoomId = tourUpdate.DefaultRoomId;
+            if (tourUpdate.MinimapUrl != null)
             {
                 tour.MinimapUrl = tourUpdate.MinimapUrl;
+            }
+
+            if (tour.Listing != null && tourUpdate.Listing != null)
+            {
+                tour.Listing.Name = tourUpdate.Listing.Name;
+                tour.Listing.Address = tourUpdate.Listing.Address;
+                tour.Listing.PricePerMonth = tourUpdate.Listing.PricePerMonth;
+                tour.Listing.AreaSqm = tourUpdate.Listing.AreaSqm;
+                tour.Listing.MaxOccupants = tourUpdate.Listing.MaxOccupants;
+                tour.Listing.BedroomCount = tourUpdate.Listing.BedroomCount;
+                tour.Listing.BathroomCount = tourUpdate.Listing.BathroomCount;
+                tour.Listing.Amenities = tourUpdate.Listing.Amenities;
+                tour.Listing.Status = tourUpdate.Listing.Status;
+                tour.Listing.ContactPhone = tourUpdate.Listing.ContactPhone;
+                tour.Listing.ContactZalo = tourUpdate.Listing.ContactZalo;
+                tour.Listing.Password = tourUpdate.Listing.Password;
             }
 
             await _repository.UpdateTourAsync(tour);
@@ -116,6 +140,8 @@ namespace Virtual3D.API.Controllers
             room.PosX = roomUpdate.PosX;
             room.PosY = roomUpdate.PosY;
             room.PosZ = roomUpdate.PosZ;
+            room.MinimapX = roomUpdate.MinimapX;
+            room.MinimapY = roomUpdate.MinimapY;
 
             await _repository.UpdateRoomAsync(room);
             return NoContent();

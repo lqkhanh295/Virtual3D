@@ -29,6 +29,10 @@ namespace Virtual3D.Domain.Entities
         public float PosY { get; set; } = 0f;
         public float PosZ { get; set; } = 0f;
 
+        // Position coordinates on 2D floorplan minimap (0-100% percentage or pixels)
+        public double? MinimapX { get; set; }
+        public double? MinimapY { get; set; }
+
         public List<Hotspot> Hotspots { get; set; } = new();
     }
 }

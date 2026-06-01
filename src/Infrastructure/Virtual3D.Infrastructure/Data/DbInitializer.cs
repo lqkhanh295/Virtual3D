@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Virtual3D.Domain.Entities;
 
@@ -12,44 +13,67 @@ namespace Virtual3D.Infrastructure.Data
 
             if (!context.Tours.Any())
             {
+                // ==========================================
                 // 1. APARTMENT TOUR SEEDING
-                var defaultTour = new Tour
+                // ==========================================
+                var apartmentListing = new Listing
+                {
+                    Id = "listing_apartment_001",
+                    ListingType = "apartment",
+                    Name = "Luxury Smart Penthouse",
+                    Address = "208 Nguyễn Hữu Cảnh, Bình Thạnh, TP.HCM",
+                    PricePerMonth = 18000000,
+                    AreaSqm = 65.0,
+                    BedroomCount = 2,
+                    BathroomCount = 2,
+                    Amenities = new List<string> { "hồ bơi", "gym", "bãi xe", "bảo vệ 24/7" },
+                    Status = "available",
+                    ContactPhone = "0907654321",
+                    ContactZalo = "0907654321"
+                };
+
+                var apartmentTour = new Tour
                 {
                     Id = "apartment_001",
-                    Name = "Luxury Smart Penthouse",
-                    Description = "A premium 2-bedroom modern penthouse featuring glass facades, luxury Italian furniture, and panoramic views.",
-                    MinimapUrl = "/assets/floorplan.svg",
-                    Type = "apartment"
+                    ListingId = apartmentListing.Id,
+                    DefaultRoomId = "living-room",
+                    MinimapUrl = "/assets/floorplan.svg"
                 };
 
                 var livingRoom = new Room
                 {
                     Id = "living-room",
-                    TourId = defaultTour.Id,
-                    Name = "Living Room",
+                    TourId = apartmentTour.Id,
+                    Name = "Phòng khách",
                     ImageUrl = "procedural://living-room",
-                    PosX = 0f, PosY = 0f, PosZ = 0f
+                    PosX = 0f, PosY = 0f, PosZ = 0f,
+                    MinimapX = 55.0,
+                    MinimapY = 100.0
                 };
 
                 var kitchen = new Room
                 {
                     Id = "kitchen",
-                    TourId = defaultTour.Id,
-                    Name = "Kitchen & Dining",
+                    TourId = apartmentTour.Id,
+                    Name = "Bếp",
                     ImageUrl = "procedural://kitchen",
-                    PosX = 15f, PosY = 0f, PosZ = 5f
+                    PosX = 15f, PosY = 0f, PosZ = 5f,
+                    MinimapX = 110.0,
+                    MinimapY = 65.0
                 };
 
                 var bedroom = new Room
                 {
                     Id = "bedroom",
-                    TourId = defaultTour.Id,
-                    Name = "Master Bedroom",
+                    TourId = apartmentTour.Id,
+                    Name = "Phòng ngủ",
                     ImageUrl = "procedural://bedroom",
-                    PosX = 30f, PosY = 0f, PosZ = -10f
+                    PosX = 30f, PosY = 0f, PosZ = -10f,
+                    MinimapX = 165.0,
+                    MinimapY = 115.0
                 };
 
-                // Add Hotspots for Living Room
+                // Hotspots for Living Room
                 livingRoom.Hotspots.AddRange(new[]
                 {
                     new Hotspot
@@ -57,28 +81,28 @@ namespace Virtual3D.Infrastructure.Data
                         Id = Guid.NewGuid().ToString(),
                         Type = "navigation",
                         TargetRoomId = "kitchen",
-                        Label = "Go to Kitchen",
+                        Label = "Vào Bếp",
                         PosX = 12f, PosY = -1.5f, PosZ = 6f
                     },
                     new Hotspot
                     {
                         Id = Guid.NewGuid().ToString(),
                         Type = "info",
-                        Label = "Luxury Leather Sofa",
-                        Description = "Italian premium top-grain leather 3-seater sofa. Modern design, supreme comfort, included in the monthly rent.",
+                        Label = "Sofa da nhập khẩu",
+                        Description = "Sofa da thật nhập khẩu Ý, 3 chỗ ngồi rộng rãi, tình trạng mới 98%.",
                         PosX = -5f, PosY = -3f, PosZ = -12f
                     },
                     new Hotspot
                     {
                         Id = Guid.NewGuid().ToString(),
                         Type = "info",
-                        Label = "Smart Entertainment Hub",
-                        Description = "65\" LG OLED 4K Smart TV with Dolby Atmos soundbar. Mounted on an adjustable bracket.",
+                        Label = "Smart TV OLED",
+                        Description = "TV LG OLED 65 inch độ phân giải 4K, hỗ trợ Apple AirPlay và âm thanh vòm Dolby Atmos.",
                         PosX = 1f, PosY = 0.5f, PosZ = -14f
                     }
                 });
 
-                // Add Hotspots for Kitchen
+                // Hotspots for Kitchen
                 kitchen.Hotspots.AddRange(new[]
                 {
                     new Hotspot
@@ -86,7 +110,7 @@ namespace Virtual3D.Infrastructure.Data
                         Id = Guid.NewGuid().ToString(),
                         Type = "navigation",
                         TargetRoomId = "living-room",
-                        Label = "Go to Living Room",
+                        Label = "Quay lại phòng khách",
                         PosX = -12f, PosY = -1.5f, PosZ = -6f
                     },
                     new Hotspot
@@ -94,20 +118,20 @@ namespace Virtual3D.Infrastructure.Data
                         Id = Guid.NewGuid().ToString(),
                         Type = "navigation",
                         TargetRoomId = "bedroom",
-                        Label = "Go to Bedroom",
+                        Label = "Đi vào Phòng ngủ",
                         PosX = 11f, PosY = -1f, PosZ = 8f
                     },
                     new Hotspot
                     {
                         Id = Guid.NewGuid().ToString(),
                         Type = "info",
-                        Label = "Induction Hob & Hood",
-                        Description = "Premium Bosch cooktop with child lock, power boost, and responsive auto-venting extractor hood.",
+                        Label = "Hệ thống Bếp từ Bosch",
+                        Description = "Bếp từ 3 vùng nấu thương hiệu Bosch nhập khẩu Đức, có chế độ tự ngắt an toàn và khóa trẻ em.",
                         PosX = 3f, PosY = -2.5f, PosZ = -13f
                     }
                 });
 
-                // Add Hotspots for Bedroom
+                // Hotspots for Bedroom
                 bedroom.Hotspots.AddRange(new[]
                 {
                     new Hotspot
@@ -115,91 +139,78 @@ namespace Virtual3D.Infrastructure.Data
                         Id = Guid.NewGuid().ToString(),
                         Type = "navigation",
                         TargetRoomId = "kitchen",
-                        Label = "Go to Kitchen",
+                        Label = "Quay lại nhà bếp",
                         PosX = -11f, PosY = -1.5f, PosZ = -8f
                     },
                     new Hotspot
                     {
                         Id = Guid.NewGuid().ToString(),
                         Type = "info",
-                        Label = "King Size Bed",
-                        Description = "King-size memory foam mattress with hypoallergenic linens, integrated ambient headboard lighting, and dual USB charging outlets.",
+                        Label = "Giường King Size",
+                        Description = "Giường đệm lò xo túi cao cấp, ga gối lụa tự nhiên, tích hợp đèn ngủ LED và cổng sạc USB tại đầu giường.",
                         PosX = 2f, PosY = -3.5f, PosZ = 12f
                     }
                 });
 
+                // ==========================================
                 // 2. BOARDING ROOM TOUR SEEDING
-                var boardingRoomTour = new Tour
+                // ==========================================
+                var roomListing = new Listing
+                {
+                    Id = "listing_room_001",
+                    ListingType = "room",
+                    Name = "Phòng 101 — Dãy trọ Bình Thạnh",
+                    Address = "12 Đinh Tiên Hoàng, Bình Thạnh, TP.HCM",
+                    PricePerMonth = 3500000,
+                    AreaSqm = 22.0,
+                    MaxOccupants = 2,
+                    Amenities = new List<string> { "máy lạnh", "WC riêng", "bếp riêng", "nóng lạnh" },
+                    Status = "available",
+                    ContactPhone = "0901234567",
+                    ContactZalo = "0901234567"
+                };
+
+                var roomTour = new Tour
                 {
                     Id = "room_001",
-                    Name = "Cosy Loft Studio",
-                    Description = "A modern fully-furnished studio boarding room featuring an integrated mezzanine loft sleeping area, private bath, and kitchenette.",
-                    MinimapUrl = "",
-                    Type = "boarding-room"
+                    ListingId = roomListing.Id,
+                    DefaultRoomId = "main-studio",
+                    MinimapUrl = string.Empty
                 };
 
                 var mainStudio = new Room
                 {
                     Id = "main-studio",
-                    TourId = boardingRoomTour.Id,
-                    Name = "Main Living Space",
+                    TourId = roomTour.Id,
+                    Name = "Toàn bộ phòng",
                     ImageUrl = "procedural://main-studio",
                     PosX = 0f, PosY = 0f, PosZ = 0f
                 };
 
-                var loftMezzanine = new Room
-                {
-                    Id = "loft-mezzanine",
-                    TourId = boardingRoomTour.Id,
-                    Name = "Mezzanine Sleeping Loft",
-                    ImageUrl = "procedural://loft-mezzanine",
-                    PosX = 0f, PosY = 8f, PosZ = 4f
-                };
-
-                // Add Hotspots for Boarding Room main space
+                // Hotspots for Room (Info hotspots only, no navigation hotspots!)
                 mainStudio.Hotspots.AddRange(new[]
                 {
                     new Hotspot
                     {
                         Id = Guid.NewGuid().ToString(),
-                        Type = "navigation",
-                        TargetRoomId = "loft-mezzanine",
-                        Label = "Go up to Sleeping Loft",
-                        PosX = 1f, PosY = 4f, PosZ = 11f
-                    },
-                    new Hotspot
-                    {
-                        Id = Guid.NewGuid().ToString(),
                         Type = "info",
-                        Label = "Compact Kitchenette",
-                        Description = "Includes dual zone induction hob, built-in microwave, under-counter quiet refrigerator, and ample storage cabinet space.",
+                        Label = "Máy lạnh Panasonic",
+                        Description = "Máy điều hòa Panasonic Inverter 1.5 HP tiết kiệm điện, lắp đặt năm 2023.",
                         PosX = -11f, PosY = -2f, PosZ = -7f
-                    }
-                });
-
-                // Add Hotspots for Boarding Room Loft
-                loftMezzanine.Hotspots.AddRange(new[]
-                {
-                    new Hotspot
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Type = "navigation",
-                        TargetRoomId = "main-studio",
-                        Label = "Go down to Main Room",
-                        PosX = -1f, PosY = -4f, PosZ = -11f
                     },
                     new Hotspot
                     {
                         Id = Guid.NewGuid().ToString(),
                         Type = "info",
-                        Label = "Loft Safety Grid",
-                        Description = "Modern high-tensile steel security grid. Lets light and air pass through while providing maximum fall protection.",
-                        PosX = 0f, PosY = -1f, PosZ = 12f
+                        Label = "Gác lửng ngủ tiện lợi",
+                        Description = "Gác lửng bê tông kiên cố, lót sàn gỗ sạch sẽ, có lan can chắn an toàn.",
+                        PosX = 5f, PosY = 4f, PosZ = 10f
                     }
                 });
 
-                context.Tours.AddRange(defaultTour, boardingRoomTour);
-                context.Rooms.AddRange(livingRoom, kitchen, bedroom, mainStudio, loftMezzanine);
+                context.Listings.AddRange(apartmentListing, roomListing);
+                context.Tours.AddRange(apartmentTour, roomTour);
+                context.Rooms.AddRange(livingRoom, kitchen, bedroom, mainStudio);
                 context.SaveChanges();
             }
         }

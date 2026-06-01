@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 using Virtual3D.Domain.Entities;
 
 namespace Virtual3D.Infrastructure.Data
@@ -9,6 +11,7 @@ namespace Virtual3D.Infrastructure.Data
         {
         }
 
+        public DbSet<Listing> Listings => Set<Listing>();
         public DbSet<Tour> Tours => Set<Tour>();
         public DbSet<Room> Rooms => Set<Room>();
         public DbSet<Hotspot> Hotspots => Set<Hotspot>();
@@ -16,6 +19,21 @@ namespace Virtual3D.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Configure Listing.Amenities Value Converter
+            modelBuilder.Entity<Listing>()
+                .Property(l => l.Amenities)
+                .HasConversion(
+                    v => string.Join(',', v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                );
+
+            // Configure Listing -> Tour 1-to-1 relationship with cascade delete
+            modelBuilder.Entity<Tour>()
+                .HasOne(t => t.Listing)
+                .WithOne()
+                .HasForeignKey<Tour>(t => t.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Configure Tour -> Room cascade delete
             modelBuilder.Entity<Room>()

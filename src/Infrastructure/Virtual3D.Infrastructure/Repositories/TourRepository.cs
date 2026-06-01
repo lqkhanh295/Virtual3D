@@ -19,6 +19,7 @@ namespace Virtual3D.Infrastructure.Repositories
         public async Task<IEnumerable<Tour>> GetToursAsync()
         {
             return await _context.Tours
+                .Include(t => t.Listing)
                 .Include(t => t.Rooms)
                 .ToListAsync();
         }
@@ -26,6 +27,7 @@ namespace Virtual3D.Infrastructure.Repositories
         public async Task<Tour?> GetTourByIdAsync(string id)
         {
             return await _context.Tours
+                .Include(t => t.Listing)
                 .Include(t => t.Rooms)
                     .ThenInclude(r => r.Hotspots)
                 .FirstOrDefaultAsync(t => t.Id == id);
@@ -33,6 +35,10 @@ namespace Virtual3D.Infrastructure.Repositories
 
         public async Task<Tour> CreateTourAsync(Tour tour)
         {
+            if (tour.Listing != null)
+            {
+                _context.Listings.Add(tour.Listing);
+            }
             _context.Tours.Add(tour);
             await _context.SaveChangesAsync();
             return tour;
@@ -41,6 +47,10 @@ namespace Virtual3D.Infrastructure.Repositories
         public async Task UpdateTourAsync(Tour tour)
         {
             _context.Entry(tour).State = EntityState.Modified;
+            if (tour.Listing != null)
+            {
+                _context.Entry(tour.Listing).State = EntityState.Modified;
+            }
             await _context.SaveChangesAsync();
         }
 
