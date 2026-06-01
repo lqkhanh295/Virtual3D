@@ -1233,6 +1233,8 @@ function Viewer360({
 
     const lastYawAngleRef = useRef(0);
     const lastYawUpdateTimeRef = useRef(0);
+    const lonRef = useRef(0);
+    const latRef = useRef(0);
     
     const [isLoading, setIsLoading] = useState(true);
     const [hoveredRoomName, setHoveredRoomName] = useState('');
@@ -1240,7 +1242,7 @@ function Viewer360({
 
     const dollhouseRef = useRef(null);
     const roomBoxesRef = useRef([]);
-    const cameraTargetPos = useRef(new THREE.Vector3(0, 0, 0.1));
+    const cameraTargetPos = useRef(new THREE.Vector3(0, 0, 0));
     const controlsTargetPos = useRef(new THREE.Vector3(0, 0, 0));
     
     const isTransitioningRef = useRef(false);
@@ -1274,7 +1276,7 @@ function Viewer360({
         scene.add(dirLight);
 
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-        camera.position.set(0, 0, 0.1);
+        camera.position.set(0, 0, 0);
         cameraRef.current = camera;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -1297,8 +1299,8 @@ function Viewer360({
         controls.autoRotateSpeed = 0.6;
         
         // Adjust control rotation speeds to feel premium and stable
-        controls.rotateSpeed = 0.45;
-        controls.zoomSpeed = 0.6;
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.0;
         controlsRef.current = controls;
 
         const geometry = new THREE.SphereGeometry(15, 60, 40);
@@ -1387,15 +1389,57 @@ function Viewer360({
             }
         };
 
+        let isPointerDragging = false;
+        let prevPointerX = 0;
+        let prevPointerY = 0;
+
+        const onPointerDown = (event) => {
+            if (viewMode !== 'panorama') return;
+            isPointerDragging = true;
+            prevPointerX = event.clientX;
+            prevPointerY = event.clientY;
+        };
+
+        const onPointerMove = (event) => {
+            if (!isPointerDragging || viewMode !== 'panorama') return;
+            const deltaX = event.clientX - prevPointerX;
+            const deltaY = event.clientY - prevPointerY;
+            prevPointerX = event.clientX;
+            prevPointerY = event.clientY;
+
+            lonRef.current -= deltaX * 0.15;
+            latRef.current += deltaY * 0.15;
+            latRef.current = Math.max(-89.9, Math.min(89.9, latRef.current));
+        };
+
+        const onPointerUp = () => {
+            isPointerDragging = false;
+        };
+
+        const handleWheel = (event) => {
+            if (viewMode !== 'panorama') return;
+            event.preventDefault();
+            const fov = camera.fov + event.deltaY * 0.05;
+            camera.fov = Math.max(40, Math.min(75, fov));
+            camera.updateProjectionMatrix();
+        };
+
         renderer.domElement.addEventListener('click', handleCanvasClick);
         renderer.domElement.addEventListener('mousemove', handleMouseMove);
+        renderer.domElement.addEventListener('pointerdown', onPointerDown);
+        renderer.domElement.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
+
+        let currentWidth = container.clientWidth;
+        let currentHeight = container.clientHeight;
 
         const handleResize = () => {
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-            camera.aspect = w / h;
+            currentWidth = container.clientWidth;
+            currentHeight = container.clientHeight;
+            camera.aspect = currentWidth / currentHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
+            renderer.setSize(currentWidth, currentHeight);
         };
         window.addEventListener('resize', handleResize);
 
@@ -1405,10 +1449,11 @@ function Viewer360({
 
             if (isTransitioningRef.current) {
                 camera.position.lerp(cameraTargetPos.current, 0.08);
-                controls.target.lerp(controlsTargetPos.current, 0.08);
+                if (viewMode === 'dollhouse') {
+                    controls.target.lerp(controlsTargetPos.current, 0.08);
+                }
 
-                if (camera.position.distanceTo(cameraTargetPos.current) < 0.05 &&
-                    controls.target.distanceTo(controlsTargetPos.current) < 0.05) {
+                if (camera.position.distanceTo(cameraTargetPos.current) < 0.05) {
                     isTransitioningRef.current = false;
                 }
             }
@@ -1421,26 +1466,35 @@ function Viewer360({
                     sphereRef.current.visible = false;
                 }
             }
-            controls.update();
+
+            if (viewMode === 'dollhouse') {
+                controls.update();
+            } else {
+                if (autoRotate && !isPointerDragging) {
+                    lonRef.current += 0.04;
+                }
+
+                camera.rotation.order = 'YXZ';
+                camera.rotation.x = THREE.MathUtils.degToRad(latRef.current);
+                camera.rotation.y = THREE.MathUtils.degToRad(lonRef.current);
+                camera.rotation.z = 0;
+            }
 
             if (onCameraRotate && viewMode === 'panorama') {
                 const lookTarget = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
                 const angle = Math.atan2(lookTarget.x, lookTarget.z);
                 const now = performance.now();
-                if (now - lastYawUpdateTimeRef.current > 50) {
-                    const angleDiff = Math.abs(angle - lastYawAngleRef.current);
-                    if (angleDiff > 0.01) {
-                        lastYawAngleRef.current = angle;
-                        lastYawUpdateTimeRef.current = now;
-                        onCameraRotate(angle);
-                    }
+                if (now - lastYawUpdateTimeRef.current > 30) {
+                    lastYawAngleRef.current = angle;
+                    lastYawUpdateTimeRef.current = now;
+                    onCameraRotate(angle);
                 }
             }
 
             const currentRoom = activeRoomRef.current;
             if (viewMode === 'panorama' && currentRoom && currentRoom.hotspots && currentRoom.hotspots.length > 0) {
-                const w = container.clientWidth;
-                const h = container.clientHeight;
+                const w = currentWidth;
+                const h = currentHeight;
                 currentRoom.hotspots.forEach(hotspot => {
                     const el = document.getElementById(`hotspot-${hotspot.id}`);
                     if (el) {
@@ -1452,9 +1506,9 @@ function Viewer360({
                             const top = (-(vector.y * 0.5) + 0.5) * h;
                             el.style.left = `${left}px`;
                             el.style.top = `${top}px`;
-                            el.style.display = 'flex';
+                            el.style.visibility = 'visible';
                         } else {
-                            el.style.display = 'none';
+                            el.style.visibility = 'hidden';
                         }
                     }
                 });
@@ -1467,9 +1521,13 @@ function Viewer360({
         return () => {
             cancelAnimationFrame(animationFrameId);
             window.removeEventListener('resize', handleResize);
+            window.removeEventListener('pointerup', onPointerUp);
             if (rendererRef.current && rendererRef.current.domElement) {
                 rendererRef.current.domElement.removeEventListener('click', handleCanvasClick);
                 rendererRef.current.domElement.removeEventListener('mousemove', handleMouseMove);
+                rendererRef.current.domElement.removeEventListener('pointerdown', onPointerDown);
+                rendererRef.current.domElement.removeEventListener('pointermove', onPointerMove);
+                rendererRef.current.domElement.removeEventListener('wheel', handleWheel);
                 container.removeChild(rendererRef.current.domElement);
             }
             geometry.dispose();
@@ -1499,6 +1557,7 @@ function Viewer360({
             isTransitioningRef.current = true;
             
             if (controlsRef.current) {
+                controlsRef.current.enabled = true;
                 controlsRef.current.enablePan = true;
                 controlsRef.current.minDistance = 5;
                 controlsRef.current.maxDistance = 60;
@@ -1509,17 +1568,19 @@ function Viewer360({
         } else {
             sphere.visible = false; 
             
-            cameraTargetPos.current.set(0, 0, 0.1);
+            cameraTargetPos.current.set(0, 0, 0);
             controlsTargetPos.current.set(0, 0, 0);
             isTransitioningRef.current = true;
 
             if (controlsRef.current) {
-                controlsRef.current.enablePan = false;
-                controlsRef.current.minDistance = 0.01;
-                controlsRef.current.maxDistance = 2.0; // Limit zoom distance to prevent sphere escape clipping
-                controlsRef.current.autoRotate = autoRotate;
-                controlsRef.current.minPolarAngle = 0.05;
-                controlsRef.current.maxPolarAngle = Math.PI - 0.05;
+                controlsRef.current.enabled = false;
+            }
+
+            if (cameraRef.current) {
+                cameraRef.current.rotation.order = 'YXZ';
+                latRef.current = THREE.MathUtils.radToDeg(cameraRef.current.rotation.x);
+                lonRef.current = THREE.MathUtils.radToDeg(cameraRef.current.rotation.y);
+                latRef.current = Math.max(-89.9, Math.min(89.9, latRef.current));
             }
         }
     }, [viewMode, rooms]);
@@ -1630,11 +1691,9 @@ function Viewer360({
         }
 
         if (viewMode === 'panorama' && !isTransitioningRef.current) {
-            if (cameraRef.current && controlsRef.current) {
-                controlsRef.current.target.set(0, 0, 0);
-                cameraRef.current.position.set(0, 0, 0.1);
-                cameraTargetPos.current.set(0, 0, 0.1);
-                controlsTargetPos.current.set(0, 0, 0);
+            if (cameraRef.current) {
+                cameraRef.current.position.set(0, 0, 0);
+                cameraTargetPos.current.set(0, 0, 0);
             }
         }
 
@@ -1698,13 +1757,6 @@ function Viewer360({
                         key={hotspot.id}
                         id={`hotspot-${hotspot.id}`}
                         className={`hotspot-marker ${hotspot.type === 'navigation' ? 'nav' : 'info'}`}
-                        style={{
-                            position: 'absolute',
-                            transform: 'translate(-50%, -50%)',
-                            display: 'none',
-                            left: '0px',
-                            top: '0px'
-                        }}
                         onClick={(e) => {
                             e.stopPropagation();
                             if (hotspot.type === 'navigation') {
