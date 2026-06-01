@@ -25,6 +25,10 @@ namespace Virtual3D.API.Controllers
         // TOUR ENDPOINTS
         // ==========================================
 
+        /// <summary>
+        /// Get all tours
+        /// </summary>
+        /// <returns>List of tours</returns>
         [HttpGet]
         public async Task<IActionResult> GetTours()
         {
@@ -40,6 +44,12 @@ namespace Virtual3D.API.Controllers
             return Ok(tour);
         }
 
+
+        /// <summary>
+        /// Create a new tour
+        /// </summary>
+        /// <param name="tour">Tour object</param>
+        /// <returns>Created tour</returns>
         [HttpPost]
         public async Task<IActionResult> CreateTour(Tour tour)
         {
@@ -61,6 +71,12 @@ namespace Virtual3D.API.Controllers
             return CreatedAtAction(nameof(GetTour), new { id = createdTour.Id }, createdTour);
         }
 
+        /// <summary>
+        /// Update a tour
+        /// </summary>
+        /// <param name="id">Tour ID</param>
+        /// <param name="tourUpdate">Tour object</param>
+        /// <returns>Updated tour</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTour(string id, Tour tourUpdate)
         {
@@ -95,6 +111,11 @@ namespace Virtual3D.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Delete a tour
+        /// </summary>
+        /// <param name="id">Tour ID</param>
+        /// <returns>Updated tour</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTour(string id)
         {
@@ -109,6 +130,12 @@ namespace Virtual3D.API.Controllers
         // ROOM ENDPOINTS
         // ==========================================
 
+        /// <summary>
+        /// Create a new room
+        /// </summary>
+        /// <param name="tourId">Tour ID</param>
+        /// <param name="room">Room object</param>
+        /// <returns>Created room</returns>
         [HttpPost("{tourId}/rooms")]
         public async Task<IActionResult> CreateRoom(string tourId, Room room)
         {
@@ -124,6 +151,12 @@ namespace Virtual3D.API.Controllers
             return Ok(createdRoom);
         }
 
+        /// <summary>
+        /// Update a room
+        /// </summary>
+        /// <param name="id">Room ID</param>
+        /// <param name="roomUpdate">Room object</param>
+        /// <returns>Updated room</returns>
         [HttpPut("rooms/{id}")]
         public async Task<IActionResult> UpdateRoom(string id, Room roomUpdate)
         {
@@ -147,6 +180,11 @@ namespace Virtual3D.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Delete a room
+        /// </summary>
+        /// <param name="id">Room ID</param>
+        /// <returns>Updated room</returns>
         [HttpDelete("rooms/{id}")]
         public async Task<IActionResult> DeleteRoom(string id)
         {
@@ -161,6 +199,12 @@ namespace Virtual3D.API.Controllers
         // HOTSPOT ENDPOINTS
         // ==========================================
 
+        /// <summary>
+        /// Create a new hotspot
+        /// </summary>
+        /// <param name="roomId">Room ID</param>
+        /// <param name="hotspot">Hotspot object</param>
+        /// <returns>Created hotspot</returns>
         [HttpPost("rooms/{roomId}/hotspots")]
         public async Task<IActionResult> CreateHotspot(string roomId, Hotspot hotspot)
         {
@@ -176,6 +220,12 @@ namespace Virtual3D.API.Controllers
             return Ok(createdHotspot);
         }
 
+        /// <summary>
+        /// Update a hotspot
+        /// </summary>
+        /// <param name="id">Hotspot ID</param>
+        /// <param name="hotspotUpdate">Hotspot object</param>
+        /// <returns>Updated hotspot</returns>
         [HttpPut("hotspots/{id}")]
         public async Task<IActionResult> UpdateHotspot(string id, Hotspot hotspotUpdate)
         {
@@ -196,6 +246,11 @@ namespace Virtual3D.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Delete a hotspot
+        /// </summary>
+        /// <param name="id">Hotspot ID</param>
+        /// <returns>Updated hotspot</returns>
         [HttpDelete("hotspots/{id}")]
         public async Task<IActionResult> DeleteHotspot(string id)
         {
@@ -210,6 +265,11 @@ namespace Virtual3D.API.Controllers
         // FILE UPLOAD ENDPOINT
         // ==========================================
 
+        /// <summary>
+        /// Upload a file
+        /// </summary>
+        /// <param name="file">File object</param>
+        /// <returns>File URL</returns>
         [HttpPost("upload")]
         public async Task<IActionResult> UploadFile(IFormFile file)
         {

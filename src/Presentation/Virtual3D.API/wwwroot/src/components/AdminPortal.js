@@ -175,7 +175,7 @@ function AdminPortal({
                         💡 Click thẳng vào điểm trên ảnh 360° để đặt Hotspot mới (chỉ thao tác ở chế độ 360°).
                     </div>
 
-                    {tourType === 'apartment' && (
+                    {tourType === 'room' && (
                         <div>
                             {!showAddRoom ? (
                                 <button
@@ -328,7 +328,7 @@ function AdminPortal({
                         </div>
                     </div>
 
-                    {tourType === 'apartment' && tour?.rooms?.length > 1 && (
+                    {tourType === 'room' && tour?.rooms?.length > 1 && (
                         <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
                             <button
                                 className="button button-danger"

@@ -65,11 +65,18 @@ function App() {
     const [wZalo, setWZalo] = useState('');
     const [wPassword, setWPassword] = useState('');
     const [wAmenities, setWAmenities] = useState([]);
+    const [wHasLoft, setWHasLoft] = useState(false);
     
     // Single image uploads ratios checks
     const [singleRoomFile, setSingleRoomFile] = useState(null);
     const [singleRoomUrl, setSingleRoomUrl] = useState('procedural://main-studio');
     const [singleRatioWarning, setSingleRatioWarning] = useState(false);
+    const [groundRoomFile, setGroundRoomFile] = useState(null);
+    const [groundRoomUrl, setGroundRoomUrl] = useState('procedural://main-studio');
+    const [groundRatioWarning, setGroundRatioWarning] = useState(false);
+    const [loftRoomFile, setLoftRoomFile] = useState(null);
+    const [loftRoomUrl, setLoftRoomUrl] = useState('procedural://bedroom');
+    const [loftRatioWarning, setLoftRatioWarning] = useState(false);
     const [wizardUploading, setWizardUploading] = useState(false);
 
     // Multi room manager properties
@@ -86,29 +93,29 @@ function App() {
         });
     };
 
-    const handleWizardSingleImageRatio = (e) => {
+    const handleWizardImageRatio = (e, setFile, setRatioWarning) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        setSingleRoomFile(file);
-        
+        setFile(file);
+
         const img = new Image();
         img.src = URL.createObjectURL(file);
         img.onload = () => {
             const ratio = img.width / img.height;
             const diff = Math.abs(ratio - 2.0);
             if (diff > 0.1) {
-                setSingleRatioWarning(true);
+                setRatioWarning(true);
             } else {
-                setSingleRatioWarning(false);
+                setRatioWarning(false);
             }
         };
     };
 
-    const handleWizardUploadRoom = async () => {
-        if (!singleRoomFile) return singleRoomUrl;
+    const uploadWizardImage = async (file, fallbackUrl, errorPrefix) => {
+        if (!file) return fallbackUrl;
         const formData = new FormData();
-        formData.append('file', singleRoomFile);
+        formData.append('file', file);
         setWizardUploading(true);
         try {
             const res = await fetch('/api/tours/upload', {
@@ -120,7 +127,7 @@ function App() {
             return data.url;
         } catch (err) {
             console.error(err);
-            alert("Lỗi tải ảnh: " + err.message);
+            alert(errorPrefix + err.message);
             return null;
         } finally {
             setWizardUploading(false);
@@ -169,13 +176,6 @@ function App() {
     };
 
     const handleFinishWizard = async () => {
-        let finalImageUrl = singleRoomUrl;
-        if (wType === 'room' && singleRoomFile) {
-            const uploadedUrl = await handleWizardUploadRoom();
-            if (!uploadedUrl) return;
-            finalImageUrl = uploadedUrl;
-        }
-
         const newListingId = 'listing-' + Date.now();
         const newListing = {
             id: newListingId,
@@ -197,15 +197,62 @@ function App() {
         const newTourId = 'tour-' + Date.now();
         let targetRooms = [];
 
+        const createNavigationHotspot = (roomId, targetRoomId, label, posX, posY, posZ) => ({
+            id: `hotspot-${Date.now()}-${roomId}-${targetRoomId}`,
+            roomId,
+            type: 'navigation',
+            targetRoomId,
+            label,
+            description: '',
+            posX,
+            posY,
+            posZ
+        });
+
+        const buildRoom = (roomId, name, imageUrl, hotspots = []) => ({
+            id: roomId,
+            tourId: newTourId,
+            name,
+            imageUrl,
+            posX: 0,
+            posY: 0,
+            posZ: 0,
+            minimapX: null,
+            minimapY: null,
+            hotspots
+        });
+
         if (wType === 'room') {
-            targetRooms = [{
-                id: 'main-room-' + Date.now(),
-                tourId: newTourId,
-                name: 'Toàn bộ phòng',
-                imageUrl: finalImageUrl,
-                posX: 0, posY: 0, posZ: 0,
-                minimapX: null, minimapY: null
-            }];
+            if (!wHasLoft) {
+                const finalImageUrl = await uploadWizardImage(singleRoomFile, singleRoomUrl, "Lỗi tải ảnh: ");
+                if (!finalImageUrl) return;
+
+                targetRooms = [buildRoom('main-room-' + Date.now(), 'Toàn bộ phòng', finalImageUrl)];
+            } else {
+                const groundImageUrl = await uploadWizardImage(groundRoomFile, groundRoomUrl, "Lỗi tải ảnh tầng trệt: ");
+                if (!groundImageUrl) return;
+
+                const loftImageUrl = await uploadWizardImage(loftRoomFile, loftRoomUrl, "Lỗi tải ảnh gác lửng: ");
+                if (!loftImageUrl) return;
+
+                const groundRoomId = 'room-ground-' + Date.now();
+                const loftRoomId = 'room-loft-' + Date.now();
+
+                targetRooms = [
+                    buildRoom(
+                        groundRoomId,
+                        'Tầng trệt',
+                        groundImageUrl,
+                        [createNavigationHotspot(groundRoomId, loftRoomId, 'Lên Gác Lửng', 6, 3.5, 9)]
+                    ),
+                    buildRoom(
+                        loftRoomId,
+                        'Gác lửng',
+                        loftImageUrl,
+                        [createNavigationHotspot(loftRoomId, groundRoomId, 'Xuống Tầng Trệt', -6, -3.5, -9)]
+                    )
+                ];
+            }
         } else {
             targetRooms = wRooms.map((r, idx) => ({
                 id: r.id,
@@ -464,6 +511,7 @@ function App() {
     };
 
     const handleTriggerNewWizard = () => {
+        setWType('room');
         setWName('');
         setWAddress('');
         setWPrice(3000000);
@@ -476,12 +524,19 @@ function App() {
         setWZalo('');
         setWPassword('');
         setWAmenities([]);
+        setWHasLoft(false);
         setWRooms([
             { id: 'living-room', name: 'Phòng khách', imageUrl: 'procedural://living-room', minimapX: 55, minimapY: 100 }
         ]);
         setSingleRoomFile(null);
         setSingleRoomUrl('procedural://main-studio');
         setSingleRatioWarning(false);
+        setGroundRoomFile(null);
+        setGroundRoomUrl('procedural://main-studio');
+        setGroundRatioWarning(false);
+        setLoftRoomFile(null);
+        setLoftRoomUrl('procedural://bedroom');
+        setLoftRatioWarning(false);
         
         setWizardStep(1);
         setShowWizard(true);
@@ -500,18 +555,19 @@ function App() {
         }
     };
 
+    const normalizedRooms = tour?.rooms || tour?.Rooms || [];
+
     useEffect(() => {
-        if (pendingHotspotPos && tour?.rooms) {
-            const otherRooms = tour.rooms.filter(r => r.id !== (activeRoom?.id || activeRoom?.Id) && r.Id !== (activeRoom?.id || activeRoom?.Id));
+        if (pendingHotspotPos && normalizedRooms.length > 0) {
+            const activeRoomId = activeRoom?.id || activeRoom?.Id;
+            const otherRooms = normalizedRooms.filter(r => (r.id || r.Id) !== activeRoomId);
             if (otherRooms.length > 0) {
                 setHsTargetRoomId(otherRooms[0].id || otherRooms[0].Id);
             } else {
                 setHsTargetRoomId('');
             }
         }
-    }, [pendingHotspotPos]);
-
-    const normalizedRooms = tour?.rooms || tour?.Rooms || [];
+    }, [pendingHotspotPos, normalizedRooms, activeRoom]);
     const normalizedActiveRoom = activeRoom 
         ? (normalizedRooms.find(r => r.id === (activeRoom.id || activeRoom.Id) || r.Id === (activeRoom.id || activeRoom.Id)) || activeRoom)
         : null;
@@ -561,13 +617,15 @@ function App() {
     const tourType = viewTour?.listing?.listingType || viewTour?.type || 'apartment';
 
     useEffect(() => {
-        if (hsType === 'navigation' && otherRoomsList.length > 0 && !hsTargetRoomId) {
-            setHsTargetRoomId(otherRoomsList[0].id || otherRoomsList[0].Id);
+        if (hsType !== 'navigation') {
+            return;
         }
-        if (tourType === 'room' && hsType === 'navigation') {
-            setHsType('info');
+
+        const currentTargetExists = otherRoomsList.some(r => (r.id || r.Id) === hsTargetRoomId);
+        if (!currentTargetExists) {
+            setHsTargetRoomId(otherRoomsList.length > 0 ? (otherRoomsList[0].id || otherRoomsList[0].Id) : '');
         }
-    }, [hsType, tourType]);
+    }, [hsType, hsTargetRoomId, otherRoomsList]);
 
     if (!componentsLoaded) {
         return (
@@ -778,9 +836,8 @@ function App() {
                                 <select 
                                     value={hsType} 
                                     onChange={(e) => setHsType(e.target.value)}
-                                    disabled={tourType === 'room'}
                                 >
-                                    {tourType === 'apartment' && <option value="navigation">Chuyển hướng sang phòng khác (Navigation)</option>}
+                                    {(tourType === 'apartment' || tourType === 'room') && <option value="navigation">Chuyển hướng sang phòng khác (Navigation)</option>}
                                     <option value="info">Hiển thị thông tin chi tiết (Information)</option>
                                 </select>
                             </div>
@@ -1043,40 +1100,131 @@ function App() {
                                 </h3>
 
                                 {wType === 'room' ? (
-                                    <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.01)' }}>
-                                        <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#fff' }}>
-                                            Tải lên 1 ảnh toàn cảnh panorama 360° (Tỷ lệ 2:1)
-                                        </span>
-                                        <div className="form-group">
-                                            <input 
-                                                type="file" accept="image/*" 
-                                                onChange={handleWizardSingleImageRatio}
-                                                style={{ padding: '6px' }}
+                                    <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.01)' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.74rem', fontWeight: '700', color: '#fff' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={wHasLoft}
+                                                onChange={(e) => {
+                                                    const nextHasLoft = e.target.checked;
+                                                    setWHasLoft(nextHasLoft);
+                                                    setSingleRoomFile(null);
+                                                    setSingleRoomUrl('procedural://main-studio');
+                                                    setSingleRatioWarning(false);
+                                                    setGroundRoomFile(null);
+                                                    setGroundRoomUrl('procedural://main-studio');
+                                                    setGroundRatioWarning(false);
+                                                    setLoftRoomFile(null);
+                                                    setLoftRoomUrl('procedural://bedroom');
+                                                    setLoftRatioWarning(false);
+                                                }}
                                             />
-                                        </div>
+                                            Phòng trọ có gác lửng?
+                                        </label>
 
-                                        {singleRatioWarning && (
-                                            <div style={{
-                                                background: 'rgba(249, 115, 22, 0.1)',
-                                                border: '1px solid rgba(249, 115, 22, 0.3)',
-                                                borderRadius: '4px',
-                                                padding: '8px',
-                                                fontSize: '0.68rem',
-                                                color: '#fb923c',
-                                                lineHeight: '1.4'
-                                            }}>
-                                                ⚠️ Cảnh báo: Tỷ lệ ảnh tải lên không đúng 2:1 (ví dụ 4096x2048). Hình ảnh hiển thị trong trình chiếu 3D có thể bị méo mó.
-                                            </div>
+                                        {!wHasLoft ? (
+                                            <>
+                                                <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#fff' }}>
+                                                    Tải lên 1 ảnh toàn cảnh panorama 360° (Tỷ lệ 2:1)
+                                                </span>
+                                                <div className="form-group">
+                                                    <input 
+                                                        type="file" accept="image/*" 
+                                                        onChange={(e) => handleWizardImageRatio(e, setSingleRoomFile, setSingleRatioWarning)}
+                                                        style={{ padding: '6px' }}
+                                                    />
+                                                </div>
+
+                                                {singleRatioWarning && (
+                                                    <div style={{
+                                                        background: 'rgba(249, 115, 22, 0.1)',
+                                                        border: '1px solid rgba(249, 115, 22, 0.3)',
+                                                        borderRadius: '4px',
+                                                        padding: '8px',
+                                                        fontSize: '0.68rem',
+                                                        color: '#fb923c',
+                                                        lineHeight: '1.4'
+                                                    }}>
+                                                        ⚠️ Cảnh báo: Tỷ lệ ảnh tải lên không đúng 2:1 (ví dụ 4096x2048). Hình ảnh hiển thị trong trình chiếu 3D có thể bị méo mó.
+                                                    </div>
+                                                )}
+
+                                                <div className="form-group">
+                                                    <label style={{ fontSize: '0.6rem' }}>Hoặc chọn ảnh phòng ảo mẫu</label>
+                                                    <select value={singleRoomUrl} onChange={e => setSingleRoomUrl(e.target.value)}>
+                                                        <option value="procedural://main-studio">Phòng studio (Grid)</option>
+                                                        <option value="procedural://living-room">Phòng khách (Grid)</option>
+                                                        <option value="procedural://bedroom">Phòng ngủ (Grid)</option>
+                                                    </select>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="form-group">
+                                                    <label style={{ fontSize: '0.6rem' }}>Ảnh 360° Tầng trệt (Ground Floor)</label>
+                                                    <input 
+                                                        type="file" accept="image/*" 
+                                                        onChange={(e) => handleWizardImageRatio(e, setGroundRoomFile, setGroundRatioWarning)}
+                                                        style={{ padding: '6px' }}
+                                                    />
+                                                </div>
+
+                                                {groundRatioWarning && (
+                                                    <div style={{
+                                                        background: 'rgba(249, 115, 22, 0.1)',
+                                                        border: '1px solid rgba(249, 115, 22, 0.3)',
+                                                        borderRadius: '4px',
+                                                        padding: '8px',
+                                                        fontSize: '0.68rem',
+                                                        color: '#fb923c',
+                                                        lineHeight: '1.4'
+                                                    }}>
+                                                        ⚠️ Ảnh tầng trệt chưa đúng tỷ lệ 2:1.
+                                                    </div>
+                                                )}
+
+                                                <div className="form-group">
+                                                    <label style={{ fontSize: '0.6rem' }}>Hoặc chọn ảnh mẫu cho Tầng trệt</label>
+                                                    <select value={groundRoomUrl} onChange={e => setGroundRoomUrl(e.target.value)}>
+                                                        <option value="procedural://main-studio">Phòng studio (Grid)</option>
+                                                        <option value="procedural://living-room">Phòng khách (Grid)</option>
+                                                        <option value="procedural://bedroom">Phòng ngủ (Grid)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="form-group">
+                                                    <label style={{ fontSize: '0.6rem' }}>Ảnh 360° Gác lửng (Loft Mezzanine)</label>
+                                                    <input 
+                                                        type="file" accept="image/*" 
+                                                        onChange={(e) => handleWizardImageRatio(e, setLoftRoomFile, setLoftRatioWarning)}
+                                                        style={{ padding: '6px' }}
+                                                    />
+                                                </div>
+
+                                                {loftRatioWarning && (
+                                                    <div style={{
+                                                        background: 'rgba(249, 115, 22, 0.1)',
+                                                        border: '1px solid rgba(249, 115, 22, 0.3)',
+                                                        borderRadius: '4px',
+                                                        padding: '8px',
+                                                        fontSize: '0.68rem',
+                                                        color: '#fb923c',
+                                                        lineHeight: '1.4'
+                                                    }}>
+                                                        ⚠️ Ảnh gác lửng chưa đúng tỷ lệ 2:1.
+                                                    </div>
+                                                )}
+
+                                                <div className="form-group">
+                                                    <label style={{ fontSize: '0.6rem' }}>Hoặc chọn ảnh mẫu cho Gác lửng</label>
+                                                    <select value={loftRoomUrl} onChange={e => setLoftRoomUrl(e.target.value)}>
+                                                        <option value="procedural://bedroom">Phòng ngủ (Grid)</option>
+                                                        <option value="procedural://main-studio">Phòng studio (Grid)</option>
+                                                        <option value="procedural://living-room">Phòng khách (Grid)</option>
+                                                    </select>
+                                                </div>
+                                            </>
                                         )}
-
-                                        <div className="form-group">
-                                            <label style={{ fontSize: '0.6rem' }}>Hoặc chọn ảnh phòng ảo mẫu</label>
-                                            <select value={singleRoomUrl} onChange={e => setSingleRoomUrl(e.target.value)}>
-                                                <option value="procedural://main-studio">Phòng studio (Grid)</option>
-                                                <option value="procedural://living-room">Phòng khách (Grid)</option>
-                                                <option value="procedural://bedroom">Phòng ngủ (Grid)</option>
-                                            </select>
-                                        </div>
                                     </div>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
