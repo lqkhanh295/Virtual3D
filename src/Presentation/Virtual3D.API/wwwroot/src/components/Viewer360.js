@@ -1303,7 +1303,7 @@ function Viewer360({
         controls.zoomSpeed = 1.0;
         controlsRef.current = controls;
 
-        const geometry = new THREE.SphereGeometry(15, 60, 40);
+        const geometry = new THREE.SphereGeometry(15, 128, 128);
         geometry.scale(-1, 1, 1);
         const material = new THREE.MeshBasicMaterial();
         const sphere = new THREE.Mesh(geometry, material);
@@ -1615,6 +1615,13 @@ function Viewer360({
             const roomId = imageUrl.replace('procedural://', '');
             setTimeout(() => {
                 const texture = generateProceduralTexture(roomId);
+                
+                if (sphereRef.current) {
+                    sphereRef.current.geometry.dispose();
+                    sphereRef.current.geometry = new THREE.SphereGeometry(15, 128, 128);
+                    sphereRef.current.geometry.scale(-1, 1, 1);
+                }
+
                 sphere.material.map = texture;
                 sphere.material.needsUpdate = true;
                 setIsLoading(false);
@@ -1624,7 +1631,7 @@ function Viewer360({
                     cameraRef.current.updateProjectionMatrix();
 
                     const startFov = 30;
-                    const targetFov = 75;
+                    const targetFov = 60;
                     const duration = 400;
                     const startTime = performance.now();
 
@@ -1650,6 +1657,26 @@ function Viewer360({
                 imageUrl,
                 (texture) => {
                     texture.colorSpace = THREE.SRGBColorSpace;
+                    
+                    const width = texture.image.width;
+                    const height = texture.image.height;
+                    const aspect = width / height;
+
+                    if (sphereRef.current) {
+                        sphereRef.current.geometry.dispose();
+                        if (aspect > 2.2 || aspect < 1.8) {
+                            // Cylindrical panorama / standard photo
+                            const radius = 15;
+                            const height = Math.max(10, Math.min(40, (2 * Math.PI * radius) / aspect));
+                            sphereRef.current.geometry = new THREE.CylinderGeometry(radius, radius, height, 128, 1, true);
+                            sphereRef.current.geometry.scale(-1, 1, 1);
+                        } else {
+                            // Spherical 360 panorama
+                            sphereRef.current.geometry = new THREE.SphereGeometry(15, 128, 128);
+                            sphereRef.current.geometry.scale(-1, 1, 1);
+                        }
+                    }
+
                     sphere.material.map = texture;
                     sphere.material.needsUpdate = true;
                     setIsLoading(false);
@@ -1659,7 +1686,7 @@ function Viewer360({
                         cameraRef.current.updateProjectionMatrix();
 
                         const startFov = 30;
-                        const targetFov = 75;
+                        const targetFov = 60;
                         const duration = 400;
                         const startTime = performance.now();
 
@@ -1683,6 +1710,11 @@ function Viewer360({
                 (err) => {
                     console.error("Failed to load texture, falling back to procedural", err);
                     const texture = generateProceduralTexture('main-studio');
+                    if (sphereRef.current) {
+                        sphereRef.current.geometry.dispose();
+                        sphereRef.current.geometry = new THREE.SphereGeometry(15, 128, 128);
+                        sphereRef.current.geometry.scale(-1, 1, 1);
+                    }
                     sphere.material.map = texture;
                     sphere.material.needsUpdate = true;
                     setIsLoading(false);
