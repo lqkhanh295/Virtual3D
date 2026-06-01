@@ -105,6 +105,7 @@ body {
     height: 100%;
     position: relative;
     outline: none;
+    touch-action: none;
 }
 
 /* Custom 2D Overlaid Hotspot markers */

@@ -1479,6 +1479,7 @@ function Viewer360({
             isTransitioningRef.current = true;
             
             if (controlsRef.current) {
+                controlsRef.current.enablePan = true;
                 controlsRef.current.minDistance = 5;
                 controlsRef.current.maxDistance = 60;
                 controlsRef.current.autoRotate = false;
@@ -1491,8 +1492,9 @@ function Viewer360({
             isTransitioningRef.current = true;
 
             if (controlsRef.current) {
+                controlsRef.current.enablePan = false;
                 controlsRef.current.minDistance = 0.01;
-                controlsRef.current.maxDistance = 15;
+                controlsRef.current.maxDistance = 2.0; // Limit zoom distance to prevent sphere escape clipping
                 controlsRef.current.autoRotate = autoRotate;
             }
         }
