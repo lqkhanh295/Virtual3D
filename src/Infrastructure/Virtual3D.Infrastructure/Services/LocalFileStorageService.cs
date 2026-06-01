@@ -18,6 +18,7 @@ namespace Virtual3D.Infrastructure.Services
             string contentRoot = Directory.GetCurrentDirectory();
             string uploadsFolder = Path.Combine(contentRoot, "wwwroot", "uploads");
 
+            // Check if uploads folder exists, if not create it
             if (!Directory.Exists(uploadsFolder))
             {
                 Directory.CreateDirectory(uploadsFolder);
