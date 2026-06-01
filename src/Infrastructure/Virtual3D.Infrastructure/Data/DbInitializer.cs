@@ -174,21 +174,30 @@ namespace Virtual3D.Infrastructure.Data
                 {
                     Id = "room_001",
                     ListingId = roomListing.Id,
-                    DefaultRoomId = "main-studio",
+                    DefaultRoomId = "room-ground",
                     MinimapUrl = string.Empty
                 };
 
-                var mainStudio = new Room
+                var roomGround = new Room
                 {
-                    Id = "main-studio",
+                    Id = "room-ground",
                     TourId = roomTour.Id,
-                    Name = "Toàn bộ phòng",
+                    Name = "Tầng trệt",
                     ImageUrl = "procedural://main-studio",
                     PosX = 0f, PosY = 0f, PosZ = 0f
                 };
 
-                // Hotspots for Room (Info hotspots only, no navigation hotspots!)
-                mainStudio.Hotspots.AddRange(new[]
+                var roomLoft = new Room
+                {
+                    Id = "room-loft",
+                    TourId = roomTour.Id,
+                    Name = "Gác lửng",
+                    ImageUrl = "procedural://bedroom",
+                    PosX = 0f, PosY = 10f, PosZ = 5f
+                };
+
+                // Hotspots for Ground Floor
+                roomGround.Hotspots.AddRange(new[]
                 {
                     new Hotspot
                     {
@@ -201,16 +210,37 @@ namespace Virtual3D.Infrastructure.Data
                     new Hotspot
                     {
                         Id = Guid.NewGuid().ToString(),
+                        Type = "navigation",
+                        TargetRoomId = "room-loft",
+                        Label = "Lên Gác Lửng",
+                        PosX = 6f, PosY = 3.5f, PosZ = 9f
+                    }
+                });
+
+                // Hotspots for Loft Mezzanine
+                roomLoft.Hotspots.AddRange(new[]
+                {
+                    new Hotspot
+                    {
+                        Id = Guid.NewGuid().ToString(),
                         Type = "info",
                         Label = "Gác lửng ngủ tiện lợi",
                         Description = "Gác lửng bê tông kiên cố, lót sàn gỗ sạch sẽ, có lan can chắn an toàn.",
-                        PosX = 5f, PosY = 4f, PosZ = 10f
+                        PosX = 5f, PosY = 1f, PosZ = 10f
+                    },
+                    new Hotspot
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Type = "navigation",
+                        TargetRoomId = "room-ground",
+                        Label = "Xuống Tầng Trệt",
+                        PosX = -6f, PosY = -3.5f, PosZ = -9f
                     }
                 });
 
                 context.Listings.AddRange(apartmentListing, roomListing);
                 context.Tours.AddRange(apartmentTour, roomTour);
-                context.Rooms.AddRange(livingRoom, kitchen, bedroom, mainStudio);
+                context.Rooms.AddRange(livingRoom, kitchen, bedroom, roomGround, roomLoft);
                 context.SaveChanges();
             }
         }
