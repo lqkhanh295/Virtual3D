@@ -1228,7 +1228,12 @@ function Viewer360({
     const controlsRef = useRef(null);
     const sphereRef = useRef(null);
     
-    const [hotspotScreenPositions, setHotspotScreenPositions] = useState([]);
+    const activeRoomRef = useRef(activeRoom);
+    activeRoomRef.current = activeRoom;
+
+    const lastYawAngleRef = useRef(0);
+    const lastYawUpdateTimeRef = useRef(0);
+    
     const [isLoading, setIsLoading] = useState(true);
     const [hoveredRoomName, setHoveredRoomName] = useState('');
     const [hoveredRoomPos, setHoveredRoomPos] = useState(null);
@@ -1357,7 +1362,7 @@ function Viewer360({
                 const targetY = isHovered ? rb.defaultY + 1.2 : rb.defaultY;
                 rb.group.position.y += (targetY - rb.group.position.y) * 0.15;
                 
-                rb.line.material.color.setHex(isHovered ? 0x00f0ff : rb.roomId === activeRoom?.id ? 0xa78bfa : 0x1e293b);
+                rb.line.material.color.setHex(isHovered ? 0x00f0ff : rb.roomId === activeRoomRef.current?.id ? 0xa78bfa : 0x1e293b);
                 rb.volume.material.opacity = isHovered ? 0.05 : 0.005;
 
                 if (isHovered) {
@@ -1421,23 +1426,38 @@ function Viewer360({
             if (onCameraRotate && viewMode === 'panorama') {
                 const lookTarget = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
                 const angle = Math.atan2(lookTarget.x, lookTarget.z);
-                onCameraRotate(angle);
+                const now = performance.now();
+                if (now - lastYawUpdateTimeRef.current > 50) {
+                    const angleDiff = Math.abs(angle - lastYawAngleRef.current);
+                    if (angleDiff > 0.01) {
+                        lastYawAngleRef.current = angle;
+                        lastYawUpdateTimeRef.current = now;
+                        onCameraRotate(angle);
+                    }
+                }
             }
 
-            if (viewMode === 'panorama' && activeRoom && activeRoom.hotspots && activeRoom.hotspots.length > 0) {
+            const currentRoom = activeRoomRef.current;
+            if (viewMode === 'panorama' && currentRoom && currentRoom.hotspots && currentRoom.hotspots.length > 0) {
                 const w = container.clientWidth;
                 const h = container.clientHeight;
-                const projectedPositions = activeRoom.hotspots.map(hotspot => {
-                    const vector = new THREE.Vector3(hotspot.posX, hotspot.posY, hotspot.posZ);
-                    vector.project(camera);
-                    const isVisible = vector.z <= 1;
-                    const left = (vector.x * 0.5 + 0.5) * w;
-                    const top = (-(vector.y * 0.5) + 0.5) * h;
-                    return { id: hotspot.id, hotspot, left, top, isVisible };
+                currentRoom.hotspots.forEach(hotspot => {
+                    const el = document.getElementById(`hotspot-${hotspot.id}`);
+                    if (el) {
+                        const vector = new THREE.Vector3(hotspot.posX, hotspot.posY, hotspot.posZ);
+                        vector.project(camera);
+                        const isVisible = vector.z <= 1;
+                        if (isVisible) {
+                            const left = (vector.x * 0.5 + 0.5) * w;
+                            const top = (-(vector.y * 0.5) + 0.5) * h;
+                            el.style.left = `${left}px`;
+                            el.style.top = `${top}px`;
+                            el.style.display = 'flex';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    }
                 });
-                setHotspotScreenPositions(projectedPositions);
-            } else {
-                setHotspotScreenPositions([]);
             }
 
             renderer.render(scene, camera);
@@ -1455,7 +1475,7 @@ function Viewer360({
             geometry.dispose();
             material.dispose();
         };
-    }, [rooms?.length, viewMode, activeRoom?.id, isAdminMode]);
+    }, [rooms?.length, viewMode, isAdminMode]);
 
     useEffect(() => {
         const sphere = sphereRef.current;
@@ -1483,6 +1503,8 @@ function Viewer360({
                 controlsRef.current.minDistance = 5;
                 controlsRef.current.maxDistance = 60;
                 controlsRef.current.autoRotate = false;
+                controlsRef.current.minPolarAngle = 0;
+                controlsRef.current.maxPolarAngle = Math.PI;
             }
         } else {
             sphere.visible = false; 
@@ -1496,6 +1518,8 @@ function Viewer360({
                 controlsRef.current.minDistance = 0.01;
                 controlsRef.current.maxDistance = 2.0; // Limit zoom distance to prevent sphere escape clipping
                 controlsRef.current.autoRotate = autoRotate;
+                controlsRef.current.minPolarAngle = 0.05;
+                controlsRef.current.maxPolarAngle = Math.PI - 0.05;
             }
         }
     }, [viewMode, rooms]);
@@ -1507,6 +1531,13 @@ function Viewer360({
     }, [autoRotate, viewMode]);
 
     useEffect(() => {
+        if (viewMode === 'dollhouse' && roomBoxesRef.current) {
+            roomBoxesRef.current.forEach(rb => {
+                const isActive = rb.roomId === activeRoom?.id;
+                rb.line.material.color.setHex(isActive ? 0xa78bfa : 0x1e293b);
+            });
+        }
+
         if (!activeRoom || viewMode !== 'panorama') return;
         setIsLoading(true);
 
@@ -1661,13 +1692,19 @@ function Viewer360({
                 </div>
             )}
 
-            {viewMode === 'panorama' && !isLoading && hotspotScreenPositions.map(({ id, hotspot, left, top, isVisible }) => {
-                if (!isVisible) return null;
+            {viewMode === 'panorama' && !isLoading && activeRoom?.hotspots?.map((hotspot) => {
                 return (
                     <div
-                        key={id}
+                        key={hotspot.id}
+                        id={`hotspot-${hotspot.id}`}
                         className={`hotspot-marker ${hotspot.type === 'navigation' ? 'nav' : 'info'}`}
-                        style={{ left: `${left}px`, top: `${top}px` }}
+                        style={{
+                            position: 'absolute',
+                            transform: 'translate(-50%, -50%)',
+                            display: 'none',
+                            left: '0px',
+                            top: '0px'
+                        }}
                         onClick={(e) => {
                             e.stopPropagation();
                             if (hotspot.type === 'navigation') {

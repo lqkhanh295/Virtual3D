@@ -108,6 +108,13 @@ body {
     touch-action: none;
 }
 
+#viewer-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
 /* Custom 2D Overlaid Hotspot markers */
 .hotspot-marker {
     position: absolute;
