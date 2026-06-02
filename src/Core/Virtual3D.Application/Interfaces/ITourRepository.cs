@@ -11,6 +11,7 @@ namespace Virtual3D.Application.Interfaces
         Task<Tour> CreateTourAsync(Tour tour);
         Task UpdateTourAsync(Tour tour);
         Task DeleteTourAsync(string id);
+        Task<List<Tour>> SearchToursAsync(string query);
 
         Task<Room?> GetRoomByIdAsync(string id);
         Task<Room> CreateRoomAsync(string tourId, Room room);

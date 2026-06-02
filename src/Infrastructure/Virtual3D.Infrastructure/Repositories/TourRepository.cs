@@ -216,5 +216,10 @@ namespace Virtual3D.Infrastructure.Repositories
         {
             await _context.SaveChangesAsync();
         }
+
+        public Task<List<Tour>> SearchToursAsync(string query)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

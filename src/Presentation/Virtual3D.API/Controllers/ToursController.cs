@@ -44,6 +44,17 @@ namespace Virtual3D.API.Controllers
             return Ok(tour);
         }
 
+        /// <summary>
+        /// Search tours by name or address
+        /// </summary>
+        /// <param name="query">Search query</param>
+        /// <returns>List of tours</returns>
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchTours(string query)
+        {
+            var tours = await _repository.SearchToursAsync(query);
+            return Ok(tours);
+        }
 
         /// <summary>
         /// Create a new tour
