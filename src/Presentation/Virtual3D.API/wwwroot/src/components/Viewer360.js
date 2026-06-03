@@ -5,88 +5,81 @@ const OrbitControls = THREE.OrbitControls;
 // ==========================================
 // 1. PROCEDURAL PANORAMA GENERATOR (FALLBACK)
 // ==========================================
+// PATCH 1A: Procedural texture with full pole coverage — no more black poles
 function generateProceduralTexture(roomId) {
+    const W = 2048, H = 1024; // Perfect 2:1 equirectangular ratio
     const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
+    canvas.width = W;
+    canvas.height = H;
     const ctx = canvas.getContext('2d');
-    
-    // Gradient backgrounds
-    let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+
+    // 1. Radial sky gradient — phủ kín toàn bộ canvas kể cả hai cực
+    let skyGrad = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, H * 0.8);
+    let floorGrad = ctx.createLinearGradient(0, H * 0.55, 0, H);
+
     if (roomId === 'living-room') {
-        gradient.addColorStop(0, '#0a0d1a');
-        gradient.addColorStop(0.5, '#1e1b4b');
-        gradient.addColorStop(1, '#02040a');
+        skyGrad.addColorStop(0, '#1e1b4b'); skyGrad.addColorStop(1, '#0a0d1a');
+        floorGrad.addColorStop(0, '#1e1b4b'); floorGrad.addColorStop(1, '#02040a');
     } else if (roomId === 'kitchen') {
-        gradient.addColorStop(0, '#022c22');
-        gradient.addColorStop(0.5, '#064e3b');
-        gradient.addColorStop(1, '#02040a');
-    } else if (roomId === 'main-studio') {
-        gradient.addColorStop(0, '#111827');
-        gradient.addColorStop(0.5, '#1f2937');
-        gradient.addColorStop(1, '#030712');
+        skyGrad.addColorStop(0, '#064e3b'); skyGrad.addColorStop(1, '#022c22');
+        floorGrad.addColorStop(0, '#064e3b'); floorGrad.addColorStop(1, '#02040a');
+    } else if (roomId === 'main-studio' || roomId === 'main-room') {
+        skyGrad.addColorStop(0, '#1f2937'); skyGrad.addColorStop(1, '#111827');
+        floorGrad.addColorStop(0, '#1f2937'); floorGrad.addColorStop(1, '#030712');
+    } else if (roomId === 'bedroom') {
+        skyGrad.addColorStop(0, '#1e1b4b'); skyGrad.addColorStop(1, '#0f0a1e');
+        floorGrad.addColorStop(0, '#1e1b4b'); floorGrad.addColorStop(1, '#090514');
     } else {
-        gradient.addColorStop(0, '#3b0764');
-        gradient.addColorStop(0.5, '#581c87');
-        gradient.addColorStop(1, '#090514');
+        skyGrad.addColorStop(0, '#581c87'); skyGrad.addColorStop(1, '#3b0764');
+        floorGrad.addColorStop(0, '#581c87'); floorGrad.addColorStop(1, '#090514');
     }
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Decorative futuristic grids
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    // Fill entire canvas — no black pixels anywhere
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, H * 0.5, W, H * 0.5);
+
+    // 2. Pole vignette — smooth radial at zenith (top) and nadir (bottom)
+    const ceilGrad = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, H * 0.18);
+    ceilGrad.addColorStop(0, 'rgba(255,255,255,0.06)');
+    ceilGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = ceilGrad;
+    ctx.fillRect(0, 0, W, H * 0.2);
+
+    const floorRadial = ctx.createRadialGradient(W/2, H, 0, W/2, H, H * 0.2);
+    floorRadial.addColorStop(0, 'rgba(0,0,0,0.6)');
+    floorRadial.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = floorRadial;
+    ctx.fillRect(0, H * 0.8, W, H * 0.2);
+
+    // 3. Decorative grid
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.lineWidth = 1;
-    for (let i = 0; i < canvas.width; i += 64) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, canvas.height);
-        ctx.stroke();
-    }
-    for (let j = 0; j < canvas.height; j += 64) {
-        ctx.beginPath();
-        ctx.moveTo(0, j);
-        ctx.lineTo(canvas.width, j);
-        ctx.stroke();
-    }
+    for (let i = 0; i < W; i += 64) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke(); }
+    for (let j = 0; j < H; j += 64) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(W, j); ctx.stroke(); }
 
-    // Texts and room labeling
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 56px Outfit, sans-serif';
+    // 4. Horizon line
+    ctx.beginPath(); ctx.moveTo(0, H * 0.5); ctx.lineTo(W, H * 0.5);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // 5. Text labels — only in equatorial band (H*0.35 to H*0.65), KHÔNG gần cực
+    ctx.font = 'bold 52px Outfit, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
-    const titleText = roomId.replace('-', ' ').toUpperCase();
-    ctx.fillText(titleText + " (360° VIEW)", canvas.width / 2, canvas.height / 2 - 60);
-    
-    ctx.font = '24px Outfit, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.fillText("Nhấp và kéo để xoay toàn cảnh • Xem các Hotspot để tương tác", canvas.width / 2, canvas.height / 2 + 10);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(roomId.replace(/-/g, ' ').toUpperCase() + ' (360°)', W / 2, H * 0.47);
 
-    ctx.font = 'bold 22px JetBrains Mono, monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.fillText("PHÍA BẮC (NORTH - YAW 0°)", canvas.width / 2, 60);
-    ctx.fillText("PHÍA NAM (SOUTH - YAW 180°)", canvas.width / 2, canvas.height - 60);
-    ctx.fillText("PHÍA ĐÔNG (EAST - YAW 90°)", canvas.width / 4, canvas.height / 2 + 120);
-    ctx.fillText("PHÍA TÂY (WEST - YAW 270°)", (3 * canvas.width) / 4, canvas.height / 2 + 120);
+    ctx.font = '22px Outfit, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('Nhấp và kéo để xoay toàn cảnh • Xem các Hotspot để tương tác', W / 2, H * 0.52);
 
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.25)';
-    ctx.lineWidth = 3;
-    if (roomId === 'living-room') {
-        ctx.strokeRect(canvas.width / 4 - 200, canvas.height / 2 + 180, 400, 150);
-        ctx.font = '20px Outfit, sans-serif';
-        ctx.fillText("[ Khu Vực Sofa ]", canvas.width / 4, canvas.height / 2 + 250);
-    } else if (roomId === 'kitchen') {
-        ctx.strokeRect(canvas.width / 2 - 300, canvas.height / 2 + 180, 600, 150);
-        ctx.font = '20px Outfit, sans-serif';
-        ctx.fillText("[ Bàn Bếp & Đồ Gia Dụng ]", canvas.width / 2, canvas.height / 2 + 250);
-    } else if (roomId === 'main-studio') {
-        ctx.strokeRect(canvas.width / 4 - 200, canvas.height / 2 + 160, 400, 160);
-        ctx.font = '20px Outfit, sans-serif';
-        ctx.fillText("[ Bếp từ & Góc Sinh Hoạt ]", canvas.width / 4, canvas.height / 2 + 240);
-        
-        ctx.strokeRect((3 * canvas.width) / 4 - 100, canvas.height / 2 - 100, 200, 300);
-        ctx.fillText("[ Cầu Thang Gác Lửng ]", (3 * canvas.width) / 4, canvas.height / 2 - 140);
-    }
+    ctx.font = 'bold 18px JetBrains Mono, monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillText('BẮC (N)', W * 0.5, H * 0.43);
+    ctx.fillText('NAM (S)', W * 0.5, H * 0.57);
+    ctx.fillText('ĐÔNG (E)', W * 0.75, H * 0.5);
+    ctx.fillText('TÂY (W)', W * 0.25, H * 0.5);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -1303,7 +1296,16 @@ function Viewer360({
         controls.zoomSpeed = 1.0;
         controlsRef.current = controls;
 
-        const geometry = new THREE.SphereGeometry(15, 128, 128);
+        // PATCH 1B: crop thetaStart/thetaLength 5° at each pole → eliminates black pole seam
+        const geometry = new THREE.SphereGeometry(
+            15,              // radius
+            128,             // widthSegments
+            64,              // heightSegments
+            0,               // phiStart
+            Math.PI * 2,     // phiLength — full 360°
+            0.087,           // thetaStart — skip top 5° (0.087 rad ≈ 5°)
+            Math.PI - 0.174  // thetaLength — skip 5° at bottom too
+        );
         geometry.scale(-1, 1, 1);
         const material = new THREE.MeshBasicMaterial();
         const sphere = new THREE.Mesh(geometry, material);
@@ -1409,7 +1411,8 @@ function Viewer360({
 
             lonRef.current -= deltaX * 0.15;
             latRef.current += deltaY * 0.15;
-            latRef.current = Math.max(-89.9, Math.min(89.9, latRef.current));
+            // PATCH 1C: Clamp to ±80° (not ±89.9°) — prevents user from looking into black poles
+            latRef.current = Math.max(-80, Math.min(80, latRef.current));
         };
 
         const onPointerUp = () => {
@@ -1540,6 +1543,23 @@ function Viewer360({
         if (!sphere) return;
 
         if (dollhouseRef.current) {
+            // PATCH 2: traverse and dispose ALL geometry + material + texture to prevent GPU memory leak
+            dollhouseRef.current.traverse((obj) => {
+                if (obj.isMesh) {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) {
+                        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                        mats.forEach(mat => {
+                            if (mat.map) mat.map.dispose();
+                            mat.dispose();
+                        });
+                    }
+                }
+                if (obj.isLine) {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                }
+            });
             sceneRef.current.remove(dollhouseRef.current);
             dollhouseRef.current = null;
         }
@@ -1617,9 +1637,14 @@ function Viewer360({
                 const texture = generateProceduralTexture(roomId);
                 
                 if (sphereRef.current) {
-                    sphereRef.current.geometry.dispose();
-                    sphereRef.current.geometry = new THREE.SphereGeometry(15, 128, 128);
-                    sphereRef.current.geometry.scale(-1, 1, 1);
+                    // PATCH 4: Only recreate geometry if currently a CylinderGeometry
+                    if (sphereRef.current.geometry.type !== 'SphereGeometry') {
+                        sphereRef.current.geometry.dispose();
+                        sphereRef.current.geometry = new THREE.SphereGeometry(
+                            15, 128, 64, 0, Math.PI * 2, 0.087, Math.PI - 0.174
+                        );
+                        sphereRef.current.geometry.scale(-1, 1, 1);
+                    }
                 }
 
                 sphere.material.map = texture;
@@ -1671,8 +1696,12 @@ function Viewer360({
                             sphereRef.current.geometry = new THREE.CylinderGeometry(radius, radius, height, 128, 1, true);
                             sphereRef.current.geometry.scale(-1, 1, 1);
                         } else {
-                            // Spherical 360 panorama
-                            sphereRef.current.geometry = new THREE.SphereGeometry(15, 128, 128);
+                            // PATCH 1D: Equirectangular — crop 5° at both poles
+                            sphereRef.current.geometry = new THREE.SphereGeometry(
+                                15, 128, 64,
+                                0, Math.PI * 2,
+                                0.087, Math.PI - 0.174
+                            );
                             sphereRef.current.geometry.scale(-1, 1, 1);
                         }
                     }
