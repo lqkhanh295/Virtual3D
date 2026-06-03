@@ -26,9 +26,35 @@ function AdminPortal({
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
     };
 
+    // PATCH 3: Validate equirectangular 2:1 aspect ratio before upload
+    const validateEquirectangular = (file) => new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            const ratio = img.width / img.height;
+            resolve({ ratio, isValid: Math.abs(ratio - 2.0) <= 0.15, width: img.width, height: img.height });
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve({ ratio: 0, isValid: false, width: 0, height: 0 }); };
+        img.src = url;
+    });
+
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        // Validate ratio before uploading
+        const { ratio, isValid, width, height } = await validateEquirectangular(file);
+        if (!isValid) {
+            const proceed = window.confirm(
+                `⚠️ Cảnh báo tỷ lệ ảnh!\n\n` +
+                `Ảnh của bạn: ${width}×${height}px (tỷ lệ ${ratio.toFixed(2)}:1)\n` +
+                `Yêu cầu: tỷ lệ 2:1 (ví dụ: 4096×2048px)\n\n` +
+                `Ảnh không đúng tỷ lệ sẽ bị méo hoặc hiện lỗ đen ở hai cực.\n\n` +
+                `Tiếp tục tải lên?`
+            );
+            if (!proceed) { e.target.value = ''; return; }
+        }
 
         const formData = new FormData();
         formData.append('file', file);
@@ -42,7 +68,7 @@ function AdminPortal({
             if (!res.ok) throw new Error("Upload failed");
             const data = await res.json();
             setNewRoomUrl(data.url);
-            alert("Tải ảnh phòng lên thành công!");
+            alert(`✅ Tải ảnh thành công!\n${width}×${height}px — tỷ lệ ${ratio.toFixed(2)}:1`);
         } catch (err) {
             console.error(err);
             alert("Lỗi tải ảnh: " + err.message);
