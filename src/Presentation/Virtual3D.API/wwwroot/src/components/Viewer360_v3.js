@@ -1219,7 +1219,8 @@ function Viewer360({
     onNavigateToRoom, 
     onShowInfoHotspot,
     onCameraRotate,
-    autoRotate
+    autoRotate,
+    logoUrl
 }) {
     const mountRef = useRef(null);
     const sceneRef = useRef(null);
@@ -1246,6 +1247,9 @@ function Viewer360({
     const controlsTargetPos = useRef(new THREE.Vector3(0, 0, 0));
     
     const isTransitioningRef = useRef(false);
+    const logoTopRef = useRef(null);
+    const logoBottomRef = useRef(null);
+    const logoUrlRef = useRef(logoUrl);
 
     useEffect(() => {
         const container = mountRef.current;
@@ -1309,6 +1313,80 @@ function Viewer360({
         const sphere = new THREE.Mesh(geometry, material);
         scene.add(sphere);
         sphereRef.current = sphere;
+
+        // =============================================
+        // Logo discs — che 2 lỗ đen ở top & bottom cực
+        // =============================================
+        const createLogoDisc = (isTop) => {
+            // Canvas fallback: Vẽ placeholder nếu chưa có logo
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Nền gradient tối mịn
+            const grad = ctx.createRadialGradient(256, 256, 20, 256, 256, 256);
+            grad.addColorStop(0, '#1a1a2e');
+            grad.addColorStop(1, '#0a0a14');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(256, 256, 256, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Watermark text
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
+            ctx.font = 'bold 72px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('V3D', 256, 256);
+
+            // Villà ring décoratif
+            ctx.strokeStyle = 'rgba(6,182,212,0.25)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(256, 256, 220, 0, Math.PI * 2);
+            ctx.stroke();
+
+            const fallbackTex = new THREE.CanvasTexture(canvas);
+            const discGeo = new THREE.CircleGeometry(8.5, 64);
+            const discMat = new THREE.MeshBasicMaterial({
+                map: fallbackTex,
+                transparent: true,
+                opacity: 0.92,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            });
+            const disc = new THREE.Mesh(discGeo, discMat);
+            if (isTop) {
+                disc.position.set(0, 12.2, 0);
+                disc.rotation.x = Math.PI / 2;
+            } else {
+                disc.position.set(0, -12.2, 0);
+                disc.rotation.x = -Math.PI / 2;
+            }
+            disc.renderOrder = 1;
+            return disc;
+        };
+
+        const topDisc = createLogoDisc(true);
+        const bottomDisc = createLogoDisc(false);
+        scene.add(topDisc);
+        scene.add(bottomDisc);
+        logoTopRef.current = topDisc;
+        logoBottomRef.current = bottomDisc;
+
+        // Apply logo texture nếu có sẵn khi khởi tạo
+        if (logoUrlRef.current) {
+            const loader = new THREE.TextureLoader();
+            loader.load(logoUrlRef.current, (tex) => {
+                tex.colorSpace = THREE.SRGBColorSpace;
+                [topDisc, bottomDisc].forEach(d => {
+                    if (d.material.map) d.material.map.dispose();
+                    d.material.map = tex;
+                    d.material.needsUpdate = true;
+                });
+            });
+        }
 
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
@@ -1534,6 +1612,35 @@ function Viewer360({
             material.dispose();
         };
     }, [rooms?.length, viewMode, isAdminMode]);
+
+    // Update logo texture whenever logoUrl prop changes
+    useEffect(() => {
+        logoUrlRef.current = logoUrl;
+        const top = logoTopRef.current;
+        const bot = logoBottomRef.current;
+        if (!top || !bot) return;
+
+        if (!logoUrl) {
+            // Không có logo — giữ placeholder
+            return;
+        }
+
+        const loader = new THREE.TextureLoader();
+        loader.load(
+            logoUrl,
+            (tex) => {
+                tex.colorSpace = THREE.SRGBColorSpace;
+                [top, bot].forEach(d => {
+                    if (d.material.map) d.material.map.dispose();
+                    d.material.map = tex;
+                    d.material.opacity = 0.97;
+                    d.material.needsUpdate = true;
+                });
+            },
+            undefined,
+            (err) => console.warn('Logo load error:', err)
+        );
+    }, [logoUrl]);
 
     useEffect(() => {
         const sphere = sphereRef.current;

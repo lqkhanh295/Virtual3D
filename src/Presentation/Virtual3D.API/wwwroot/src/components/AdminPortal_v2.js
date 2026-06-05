@@ -12,6 +12,7 @@ function AdminPortal({
     onDeleteRoom, 
     onDeleteHotspot,
     onUploadMinimap,
+    onUploadLogo,
     onDeleteTour,
     onTriggerNewTourWizard
 }) {
@@ -20,6 +21,7 @@ function AdminPortal({
     const [uploading, setUploading] = useState(false);
     const [showAddRoom, setShowAddRoom] = useState(false);
     const [minimapUploading, setMinimapUploading] = useState(false);
+    const [logoUploading, setLogoUploading] = useState(false);
 
     const formatVND = (value) => {
         if (!value) return 'Liên hệ';
@@ -175,6 +177,76 @@ function AdminPortal({
                         💡 Click thẳng vào điểm trên ảnh 360° để đặt Hotspot mới (chỉ thao tác ở chế độ 360°).
                     </div>
 
+                    {/* ===== LOGO CHỦ TRỌ — luôn hiện ở đầu panel ===== */}
+                    <div style={{
+                        background: 'rgba(167, 139, 250, 0.06)',
+                        border: '1px solid rgba(167, 139, 250, 0.25)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '10px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                🏷️ Logo Chủ Trọ
+                            </span>
+                            <span style={{ fontSize: '0.52rem', color: 'var(--text-muted)' }}>2 cực đen 360°</span>
+                        </div>
+
+                        {tour?.logoUrl ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                <img
+                                    src={tour.logoUrl}
+                                    alt="Logo hiện tại"
+                                    style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', padding: '3px' }}
+                                />
+                                <span style={{ fontSize: '0.6rem', color: 'var(--accent-primary)', fontWeight: '700' }}>✓ Đã có logo</span>
+                            </div>
+                        ) : (
+                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                Chưa có logo — 2 điểm đen đang hiện watermark V3D.
+                            </div>
+                        )}
+
+                        <label
+                            htmlFor="logo-upload-input"
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                cursor: 'pointer', padding: '6px 12px',
+                                background: 'rgba(167, 139, 250, 0.12)',
+                                border: '1px solid rgba(167, 139, 250, 0.3)',
+                                borderRadius: '6px', fontSize: '0.68rem', fontWeight: '700',
+                                color: 'var(--accent-primary)', width: '100%', justifyContent: 'center'
+                            }}
+                        >
+                            {logoUploading ? '⏳ Đang tải...' : (tour?.logoUrl ? '🔄 Đổi logo' : '📤 Tải logo lên')}
+                        </label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            id="logo-upload-input"
+                            style={{ display: 'none' }}
+                            onChange={async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                setLogoUploading(true);
+                                try {
+                                    const res = await fetch('/api/tours/upload', { method: 'POST', body: formData });
+                                    if (!res.ok) throw new Error('Upload logo thất bại');
+                                    const data = await res.json();
+                                    onUploadLogo(data.url);
+                                    alert('Cập nhật logo thành công! Nhìn lên đỉnh/đáy trong 360°.');
+                                } catch (err) {
+                                    console.error(err);
+                                    alert('Lỗi: ' + err.message);
+                                } finally {
+                                    setLogoUploading(false);
+                                    e.target.value = '';
+                                }
+                            }}
+                        />
+                    </div>
+
                     {tourType === 'room' && (
                         <div>
                             {!showAddRoom ? (
@@ -276,6 +348,8 @@ function AdminPortal({
                             </div>
                         </div>
                     )}
+
+                    {/* Logo section (old) was moved up to top of admin panel for visibility */}
 
                     <div>
                         <span style={{ fontSize: '0.6rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>

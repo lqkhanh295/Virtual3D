@@ -441,6 +441,7 @@ function App() {
         if (!tour) return;
         const updated = {
             id: tour.id || tour.Id,
+            listingId: tour.listingId || tour.ListingId || (tour.listing ? (tour.listing.id || tour.listing.Id) : ""),
             minimapUrl: url,
             listing: tour.listing
         };
@@ -455,6 +456,28 @@ function App() {
         } catch (err) {
             console.error(err);
             alert("Lỗi sơ đồ: " + err.message);
+        }
+    };
+
+    const handleUpdateLogoUrl = async (url) => {
+        if (!tour) return;
+        const updated = {
+            id: tour.id || tour.Id,
+            listingId: tour.listingId || tour.ListingId || (tour.listing ? (tour.listing.id || tour.listing.Id) : ""),
+            logoUrl: url,
+            listing: tour.listing
+        };
+        try {
+            const res = await fetch(`/api/tours/${tour.id || tour.Id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updated)
+            });
+            if (!res.ok) throw new Error("Update logo failed");
+            await fetchToursAndDetail(activeTourId);
+        } catch (err) {
+            console.error(err);
+            alert("Lỗi cập nhật logo: " + err.message);
         }
     };
 
@@ -599,6 +622,7 @@ function App() {
         description: tour.listing?.description || tour.description || tour.Description,
         type: tour.listing?.listingType || tour.type || tour.Type,
         minimapUrl: tour.minimapUrl || tour.MinimapUrl,
+        logoUrl: tour.logoUrl || tour.LogoUrl || null,
         listing: tour.listing,
         rooms: normalizedRooms.map(r => ({
             id: r.id || r.Id,
@@ -679,6 +703,7 @@ function App() {
                     onShowInfoHotspot={(hs) => setSelectedHotspot(hs)}
                     onCameraRotate={(angle) => setYawAngle(angle)}
                     autoRotate={autoRotate}
+                    logoUrl={viewTour?.logoUrl || null}
                 />
             ) : (
                 <div style={{
@@ -750,6 +775,7 @@ function App() {
                     onDeleteRoom={handleDeleteRoom}
                     onDeleteHotspot={handleDeleteHotspot}
                     onUploadMinimap={handleUpdateMinimapUrl}
+                    onUploadLogo={handleUpdateLogoUrl}
                     onDeleteTour={handleDeleteTour}
                     onTriggerNewTourWizard={handleTriggerNewWizard}
                 />

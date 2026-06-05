@@ -20,6 +20,8 @@ namespace Virtual3D.Domain.Entities
 
         public string? MinimapUrl { get; set; }
 
+        public string? LogoUrl { get; set; }
+
         public List<Room> Rooms { get; set; } = new();
     }
 }

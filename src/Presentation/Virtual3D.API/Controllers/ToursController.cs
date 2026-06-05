@@ -101,6 +101,10 @@ namespace Virtual3D.API.Controllers
             {
                 tour.MinimapUrl = tourUpdate.MinimapUrl;
             }
+            if (tourUpdate.LogoUrl != null)
+            {
+                tour.LogoUrl = tourUpdate.LogoUrl;
+            }
 
             if (tour.Listing != null && tourUpdate.Listing != null)
             {
@@ -130,11 +134,20 @@ namespace Virtual3D.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTour(string id)
         {
+            if(string.IsNullOrEmpty(id)) return BadRequest("Tour ID is required");
+
             var tour = await _repository.GetTourByIdAsync(id);
             if (tour == null) return NotFound();
 
-            await _repository.DeleteTourAsync(id);
-            return NoContent();
+            try
+            {
+                await _repository.DeleteTourAsync(id);
+                return Ok(new { message = "Tour deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Delete tour failed", error = ex.Message });
+            }
         }
 
         // ==========================================
@@ -171,6 +184,9 @@ namespace Virtual3D.API.Controllers
         [HttpPut("rooms/{id}")]
         public async Task<IActionResult> UpdateRoom(string id, Room roomUpdate)
         {
+            if(string.IsNullOrEmpty(id)) return BadRequest("Room ID is required");
+            if(string.IsNullOrEmpty(roomUpdate.Id)) return BadRequest("Room ID is required");
+
             if (id != roomUpdate.Id) return BadRequest("Room ID mismatch");
 
             var room = await _repository.GetRoomByIdAsync(id);
@@ -199,6 +215,8 @@ namespace Virtual3D.API.Controllers
         [HttpDelete("rooms/{id}")]
         public async Task<IActionResult> DeleteRoom(string id)
         {
+            if(string.IsNullOrEmpty(id)) return BadRequest("Room ID is required");
+
             var room = await _repository.GetRoomByIdAsync(id);
             if (room == null) return NotFound();
 
@@ -219,6 +237,9 @@ namespace Virtual3D.API.Controllers
         [HttpPost("rooms/{roomId}/hotspots")]
         public async Task<IActionResult> CreateHotspot(string roomId, Hotspot hotspot)
         {
+            if(string.IsNullOrEmpty(roomId)) return BadRequest("Room ID is required");
+            if(string.IsNullOrEmpty(hotspot.Id)) return BadRequest("Hotspot ID is required");
+
             var roomExists = await _repository.RoomExistsAsync(roomId);
             if (!roomExists) return NotFound("Room not found");
 
@@ -240,6 +261,9 @@ namespace Virtual3D.API.Controllers
         [HttpPut("hotspots/{id}")]
         public async Task<IActionResult> UpdateHotspot(string id, Hotspot hotspotUpdate)
         {
+            if(string.IsNullOrEmpty(id)) return BadRequest("Hotspot ID is required");
+            if(string.IsNullOrEmpty(hotspotUpdate.Id)) return BadRequest("Hotspot ID is required");
+
             if (id != hotspotUpdate.Id) return BadRequest("Hotspot ID mismatch");
 
             var hotspot = await _repository.GetHotspotByIdAsync(id);
@@ -265,6 +289,8 @@ namespace Virtual3D.API.Controllers
         [HttpDelete("hotspots/{id}")]
         public async Task<IActionResult> DeleteHotspot(string id)
         {
+            if(string.IsNullOrEmpty(id)) return BadRequest("Hotspot ID is required");
+
             var hotspot = await _repository.GetHotspotByIdAsync(id);
             if (hotspot == null) return NotFound();
 
