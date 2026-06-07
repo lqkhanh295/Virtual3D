@@ -217,11 +217,18 @@ namespace Virtual3D.API.Controllers
         {
             if(string.IsNullOrEmpty(id)) return BadRequest("Room ID is required");
 
-            var room = await _repository.GetRoomByIdAsync(id);
-            if (room == null) return NotFound();
+            try
+            {
+                var room = await _repository.GetRoomByIdAsync(id);
+                if (room == null) return NotFound();
 
-            await _repository.DeleteRoomAsync(id);
-            return NoContent();
+                await _repository.DeleteRoomAsync(id);
+                return Ok(new { message = "Room deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Delete room failed", error = ex.Message });
+            }
         }
 
         // ==========================================
@@ -289,13 +296,23 @@ namespace Virtual3D.API.Controllers
         [HttpDelete("hotspots/{id}")]
         public async Task<IActionResult> DeleteHotspot(string id)
         {
+            //check id is not null or empty
             if(string.IsNullOrEmpty(id)) return BadRequest("Hotspot ID is required");
 
-            var hotspot = await _repository.GetHotspotByIdAsync(id);
-            if (hotspot == null) return NotFound();
+            //try delete hotspot
+            try
+            {
+                //get hotspot by id
+                var hotspot = await _repository.GetHotspotByIdAsync(id);
+                if (hotspot == null) return NotFound();
 
-            await _repository.DeleteHotspotAsync(id);
-            return NoContent();
+                await _repository.DeleteHotspotAsync(id);
+                return Ok(new { message = "Hotspot deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Delete hotspot failed", error = ex.Message });
+            }
         }
 
         // ==========================================
