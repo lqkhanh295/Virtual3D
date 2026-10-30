@@ -1,107 +1,136 @@
-# Virtual3D - 360° Apartment Virtual Tour Platform
+# Virtual3D — 360° Apartment Virtual Tour & Spatial Viewer Platform
 
-**Virtual3D** là nền tảng xem căn hộ 360 độ trực tuyến hỗ trợ người thuê nhà hình dung không gian thực tế mà không cần đến tận nơi. Dự án được phát triển kết hợp sức mạnh của **ASP.NET Core 8/10 (Web API)** và **React.js + Three.js (WebGL)** phục vụ trải nghiệm mượt mà, trực quan.
+> An interactive, web-based 360° property inspection platform enabling prospective tenants and homebuyers to explore residential spaces with Google Street View-style camera transitions, 2D floorplan minimaps with real-time radar orientation, and in-scene tour authoring.
 
----
-
-## 🌟 Tính Năng Nổi Bật (Key Features)
-
-### 1. Trải nghiệm xem 360° mượt mà (Google Maps Style Transitions)
-- Trình chiếu ảnh Panorama equirectangular dạng cầu xoay 360 độ với tương tác mượt mà bằng chuột/cảm ứng.
-- **Hiệu ứng thu phóng di chuyển (Immersive Zoom):** Khi di chuyển qua lại giữa các phòng, camera tự động zoom-in chặt vào điểm đích trước khi tráo đổi ảnh và zoom-out mở rộng góc nhìn trở lại, tạo cảm giác di chuyển chân thực giống như Google Street View.
-- **Tự động xoay camera (Auto-Rotate):** Nút chức năng cho phép camera tự động quét quét toàn cảnh phòng với tốc độ nhẹ nhàng.
-
-### 2. Hai chế độ xem tối ưu (Dual Viewing Modes)
-- **Chế độ Căn hộ (Apartment Mode):**
-  - Tích hợp sơ đồ mặt bằng 2D (Minimap) vẽ bằng đồ họa vector SVG sắc nét.
-  - Hiển thị **Radar Cone** (quạt quét góc nhìn camera) quay theo thời gian thực dựa vào hướng nhìn camera trong không gian 3D.
-  - Click vào các phòng trên sơ đồ để teleport di chuyển nhanh.
-- **Chế độ Phòng trọ (Boarding Room Mode):**
-  - Tối giản hóa không gian. Ẩn sơ đồ 2D và tự động bật **Thẻ thông tin tiền phòng & dịch vụ** (giá điện, nước, internet, các dịch vụ miễn phí và nút đăng ký lịch xem).
-  - Hỗ trợ thiết lập gác lửng (Loft mezzanine) di chuyển theo chiều dọc.
-
-### 3. Trình cấu hình Tour trực quan cho Chủ nhà (Admin Portal)
-- Tích hợp trực tiếp **Admin Mode** ngay tại màn hình xem.
-- Khi bật chế độ sửa, tâm màn hình xuất hiện hồng tâm ngắm. Người dùng click trực tiếp vào bất kỳ góc nào trong không gian 3D để tạo liên kết (Hotspot).
-- Hỗ trợ tạo 2 loại Hotspot:
-  - **Navigation (Chuyển phòng):** Chọn phòng đích liên kết.
-  - **Information (Chi tiết nội thất):** Nhập nhãn hiển thị, mô tả chi tiết sản phẩm hoặc giá cả.
-- Tích hợp nút upload ảnh Panorama lên server, thêm phòng mới, xóa phòng cũ hoặc xóa các hotspot không cần thiết.
-
-### 4. Cơ chế hoạt động Offline & Tối ưu Texture
-- Hệ thống tích hợp một trình **vẽ ảnh 3D giả lập trên Canvas (Procedural Textures)** làm phương án dự phòng. Khi ảnh chưa tải kịp hoặc thiết bị chạy offline, hệ thống tự động sinh phòng giả lập kèm chữ và phân hướng La bàn (North, South, East, West) trong vòng 50ms, cam kết thời gian load đầu tiên < 2 giây.
+[![.NET 10](https://img.shields.io/badge/.NET-10.0%20%2F%208.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-Web_API-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/apps/aspnet)
+[![React](https://img.shields.io/badge/React-18.0+-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Three.js](https://img.shields.io/badge/Three.js-WebGL-000000?style=for-the-badge&logo=threedotjs&logoColor=white)](https://threejs.org/)
+[![Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Onion-blueviolet?style=for-the-badge)](#system-architecture)
+[![Entity Framework Core](https://img.shields.io/badge/EF_Core-SQLite%20%2F%20PostgreSQL-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://docs.microsoft.com/ef/core/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](#license)
 
 ---
 
-## 🏗️ Thiết Kế Hệ Thống (System Architecture - Clean Architecture)
+## 🌟 1. Key Features
 
-Dự án được cấu trúc theo mô hình **Clean Architecture (Onion Architecture)** giúp phân tách độc lập các luồng dữ liệu, nghiệp vụ doanh nghiệp, và giao diện hiển thị:
-- **Core (Domain & Application Layers):** Chứa các thực thể cốt lõi (`Tour`, `Room`, `Hotspot`) và định nghĩa các giao diện kho lưu trữ dữ liệu (`ITourRepository`, `IFileStorageService`) mà không phụ thuộc vào framework nào.
-- **Infrastructure:** Thực thi chi tiết cách lưu trữ dữ liệu thông qua EF Core (SQLite / PostgreSQL) và dịch vụ lưu trữ file vật lý trên ổ đĩa.
-- **Presentation (API / SPA):** Đóng vai trò là cổng giao tiếp HTTP API và phục vụ các tệp tĩnh React SPA cho trình duyệt người dùng.
+### 🔄 1. Google Street View-Style 360° Transitions
+- **Equirectangular Panorama Projection**: High-definition 360° spherical projection powered by Three.js `SphereGeometry` and customized shader materials.
+- **Cinematic Zoom Tweening**: When navigating between rooms, the camera smoothly zooms in toward the clicked hotspot target, seamlessly cross-fades the equirectangular texture, and zooms out to the target room's default viewpoint.
+- **Auto-Rotation**: Smooth ambient camera panning for passive viewing.
+
+### 🧭 2. Dual Inspection Modes
+- **Apartment Mode (Luxury & Multi-Room)**:
+  - High-precision 2D vector SVG floorplan minimap.
+  - **Dynamic Real-Time Radar Cone**: Interactive view frustum cone on the minimap that rotates in real-time in sync with the user's 3D camera azimuth.
+  - Quick room-to-room teleportation by tapping rooms on the 2D floorplan.
+- **Boarding Room / Studio Mode (Compact Rentals)**:
+  - Streamlined UI focused on room utility costs (rent, electricity, water, internet) with scheduling inquiry buttons.
+  - Vertical camera elevation transitions for loft and mezzanine spaces.
+
+### 🛠️ 3. In-Scene Interactive Admin Portal
+- **Zero-Code Tour Authoring**: Property owners can switch to Admin Mode directly inside the viewer.
+- **Crosshair Target Hotspot Placement**: A precision targeting reticle allows administrators to click anywhere in the 3D spherical space to drop interactive hotspots.
+- **Dual Hotspot Types**:
+  - `Navigation Hotspot`: Links to another room with smooth transition animation.
+  - `Information Hotspot`: Highlights furniture, appliances, specifications, and dimensions.
+- Server-side image upload and instant scene graph updates.
+
+### ⚡ 4. Instant Procedural Canvas Fallback
+- Includes a procedural 3D texture generator built on HTML5 Canvas.
+- When network connectivity is slow or assets are offline, procedural textures with directional compass indicators (**North, South, East, West**) render in **< 50ms**, ensuring sub-2-second first paint times.
 
 ---
 
-## 📁 Cấu Trúc Thư Mục Dự Án
+## 🏗️ 2. System Architecture
 
-```
+Built strictly following **Clean Architecture (Onion Architecture)** principles to separate business logic, data persistence, and presentation:
+
+```text
 Virtual3D/
-├── Virtual3D.slnx            # File C# XML Solution quản lý 4 projects
+├── Virtual3D.slnx                   # Modern .NET XML Solution File
 └── src/
     ├── Core/
-    │   ├── Virtual3D.Domain/         # Lớp Thực thể (Domain Entities)
-    │   │   └── Entities/             # Tour.cs, Room.cs, Hotspot.cs
-    │   │
-    │   └── Virtual3D.Application/    # Lớp Nghiệp vụ (Interfaces & DTOs)
-    │       └── Interfaces/           # Định nghĩa ITourRepository, IFileStorageService
-    │
+    │   ├── Virtual3D.Domain/        # Enterprise domain models (Tour, Room, Hotspot, Enums)
+    │   └── Virtual3D.Application/   # Service interfaces (ITourRepository, IFileStorageService) & DTOs
     ├── Infrastructure/
-    │   └── Virtual3D.Infrastructure/ # Lớp Hạ tầng (EF Core & Local Services)
-    │       ├── Data/                 # TourDbContext.cs và DbInitializer.cs (Seed data)
-    │       ├── Repositories/         # Triển khai TourRepository.cs
-    │       └── Services/             # Triển khai LocalFileStorageService.cs
-    │
+    │   └── Virtual3D.Infrastructure/# EF Core DbContext, SQLite/PostgreSQL migrations & file storage
     └── Presentation/
-        └── Virtual3D.API/            # Lớp Giao diện & Cổng API (API & SPA Frontend)
-            ├── Controllers/          # ToursController.cs (HTTP Route endpoints)
-            ├── wwwroot/              # Chứa toàn bộ mã nguồn tĩnh của React SPA
-            └── Program.cs            # Cấu hình dependency injection và khởi tạo ứng dụng
+        └── Virtual3D.API/           # ASP.NET Core API endpoints & React SPA client in wwwroot
 ```
+
+### Architectural Highlights
+- **Framework-Independent Domain**: Enterprise business entities have zero dependencies on external frameworks or UI libraries.
+- **Repository Pattern**: Persistence operations are abstracted behind `ITourRepository`, allowing seamless database switching.
+- **Dual Database Provider**: Supports zero-configuration local development via SQLite and enterprise-grade deployment via PostgreSQL.
 
 ---
 
-## 🚀 Hướng Dẫn Chạy Dự Án (Local Setup)
+## 🛠️ 3. Tech Stack
 
-Dự án đã được đóng gói tự động hóa 100%, bạn chỉ cần cài đặt .NET SDK trên máy tính:
+- **Backend**: C#, .NET 10 / 8, ASP.NET Core Web API, Entity Framework Core
+- **Frontend**: React.js, Three.js (WebGL), HTML5 Canvas, Tailwind CSS
+- **Database**: SQLite (Local Dev / Embedded) & PostgreSQL (Production)
+- **Tooling**: .NET CLI, Visual Studio, Vite, Postman
 
-1. **Clone mã nguồn dự án** hoặc mở terminal tại thư mục dự án:
-   ```powershell
-   cd "d:/CODE/Virtual3D"
+---
+
+## 🚀 4. Quick Start & Local Execution
+
+### Prerequisites
+- [.NET 8 SDK or .NET 10 SDK](https://dotnet.microsoft.com/download)
+
+### Run the Application
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/lqkhanh295/Virtual3D.git
+   cd Virtual3D
    ```
 
-2. **Chạy ứng dụng bằng lệnh .NET:**
-   ```powershell
+2. **Run the API & SPA directly:**
+   ```bash
    dotnet run --project src/Presentation/Virtual3D.API
    ```
 
-3. **Mở trình duyệt Web và truy cập:**
-   Hệ thống sẽ chạy và lắng nghe tại cổng mặc định: `http://localhost:5048`.
-   *Khi khởi chạy lần đầu, hệ thống sẽ tự động tạo cơ sở dữ liệu SQLite `virtual3d.db` tại thư mục đang thực thi và nạp sẵn 2 Tour mẫu: 1 Căn hộ Penthouse Luxury và 1 Phòng trọ gác lửng Studio.*
+3. **Open the browser:**
+   Navigate to `http://localhost:5048`.
+
+> **Note:** On first startup, the application automatically creates the SQLite database (`virtual3d.db`) and seeds two complete virtual tours: a Luxury Penthouse and a Studio Loft.
 
 ---
 
-## ⚙️ Cấu Hình PostgreSQL (Production Database)
+## ⚙️ 5. Production Database Configuration (PostgreSQL)
 
-Để chuyển đổi từ SQLite sang PostgreSQL khi triển khai thực tế:
+To connect to a production PostgreSQL database:
 
-1. Mở tệp `appsettings.json` tại thư mục gốc.
-2. Thêm hoặc cập nhật chuỗi kết nối và khai báo Database Provider:
+1. Open `appsettings.json` (or set environment variables):
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Host=localhost;Database=Virtual3D_DB;Username=your_user;Password=your_password"
+       "DefaultConnection": "Host=localhost;Database=Virtual3D_DB;Username=postgres;Password=your_password"
      },
      "DatabaseProvider": "PostgreSQL"
    }
    ```
-3. Khởi động lại ứng dụng. Hệ thống sẽ tự động đọc cấu hình mới, chuyển provider sang PostgreSQL, sinh cấu trúc bảng và seed lại dữ liệu mẫu tự động.
+2. Restart the API server. Entity Framework Core will automatically migrate the database schema and seed the initial tours.
+
+---
+
+## 📡 6. API Endpoints Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/tours` | Retrieve all available virtual tours |
+| `GET` | `/api/tours/{id}` | Get tour details with full room hierarchy and hotspots |
+| `POST` | `/api/tours` | Create a new virtual tour |
+| `POST` | `/api/tours/{id}/rooms` | Add a new room with equirectangular panorama image |
+| `POST` | `/api/rooms/{id}/hotspots` | Create navigation or informational hotspots |
+| `DELETE` | `/api/hotspots/{id}` | Remove a hotspot |
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+Developed by [Le Quoc Khanh](https://github.com/lqkhanh295).
